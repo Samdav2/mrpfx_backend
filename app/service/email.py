@@ -4,6 +4,7 @@ Email service for sending verification and password reset emails.
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from datetime import datetime
 import logging
 import os
 from jinja2 import Environment, FileSystemLoader
@@ -53,11 +54,12 @@ async def send_email(
         msg.attach(MIMEText(html_content, "html"))
 
         # Connect and send
-        if settings.SMTP_TLS:
-            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
-            server.starttls()
-        else:
+        if str(settings.SMTP_PORT) == "465":
             server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT)
+        else:
+            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+            if settings.SMTP_TLS:
+                server.starttls()
 
         server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
         server.sendmail(settings.SMTP_FROM_EMAIL, to_email, msg.as_string())
@@ -220,3 +222,145 @@ async def send_order_status_update_email(
     """
 
     return await send_email(email, subject, html_content, text_content)
+
+
+async def send_propfirm_login_success_email(
+    email: str,
+    username: str,
+    login_id: str,
+    platform: str,
+    dashboard_url: str
+) -> bool:
+    """
+    Send notification for successful prop firm login.
+    """
+    subject = f"MRPFX Login Notification - {settings.APP_NAME}"
+
+    html_content = render_template(
+        "email/propfirm_login_success.html",
+        username=username,
+        login_id=login_id,
+        platform=platform,
+        dashboard_url=dashboard_url
+    )
+
+    text_content = f"""
+    MRPFX Login Notification
+
+    Hello {username},
+
+    This is a quick notification to let you know that your MRPFX account has been successfully accessed.
+
+    Account Details:
+    Login: {login_id}
+    Platform: {platform}
+
+    If this was you, no further action is needed.
+    """
+
+    return await send_email(email, subject, html_content, text_content)
+
+
+async def send_course_enrollment_email(
+    email: str,
+    username: str,
+    course_name: str,
+    course_url: str
+) -> bool:
+    """
+    Send course enrollment confirmation.
+    """
+    subject = f"Enrolled in {course_name} - {settings.APP_NAME}"
+
+    html_content = render_template(
+        "email/course_enrollment.html",
+        username=username,
+        course_name=course_name,
+        course_url=course_url
+    )
+
+    text_content = f"""
+    Course Enrollment Successful!
+
+    Hello {username},
+
+    You have successfully enrolled in the course: {course_name}.
+
+    Start learning now:
+    {course_url}
+    """
+
+    return await send_email(email, subject, html_content, text_content)
+
+
+async def send_admin_new_user_email_notification(
+    admin_email: str,
+    new_username: str,
+    new_user_email: str
+) -> bool:
+    """
+    Notify admin of new user registration.
+    """
+    subject = f"New User Registration: {new_username} - {settings.APP_NAME}"
+
+    dashboard_url = f"{settings.FRONTEND_URL}/admin/users"
+
+    html_content = render_template(
+        "email/admin_new_user.html",
+        new_username=new_username,
+        new_user_email=new_user_email,
+        registration_date=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        admin_dashboard_url=dashboard_url
+    )
+
+    text_content = f"""
+    New User Registration
+
+    A new user has registered on MRPFX.
+
+    Username: {new_username}
+    Email: {new_user_email}
+    """
+
+    return await send_email(admin_email, subject, html_content, text_content)
+
+
+async def send_admin_new_order_notification(
+    admin_email: str,
+    order_id: int,
+    customer_name: str,
+    customer_email: str,
+    total: float,
+    currency: str,
+    items: list
+) -> bool:
+    """
+    Notify admin of new order.
+    """
+    subject = f"New Order Recieved #{order_id} - {settings.APP_NAME}"
+
+    admin_order_url = f"{settings.FRONTEND_URL}/admin/orders/{order_id}"
+
+    html_content = render_template(
+        "email/admin_new_order.html",
+        order_id=order_id,
+        customer_name=customer_name,
+        customer_email=customer_email,
+        total=total,
+        currency=currency,
+        items=items,
+        admin_order_url=admin_order_url
+    )
+
+    items_text = "\n".join([f"- {item}" for item in items])
+    text_content = f"""
+    New Order Received
+
+    Order ID: #{order_id}
+    Customer: {customer_name} ({customer_email})
+    Total: {total} {currency}
+    Items:
+    {items_text}
+    """
+
+    return await send_email(admin_email, subject, html_content, text_content)

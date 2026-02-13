@@ -3,7 +3,7 @@ Authentication service with WordPress-compatible password hashing.
 """
 from datetime import datetime, timezone
 from typing import Optional, Tuple
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, BackgroundTasks
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.model.user import User
@@ -30,12 +30,13 @@ class AuthService:
         self.session = session
         self.user_repo = UserRepository(session)
 
-    async def signup(self, request: SignupRequest) -> Tuple[User, str]:
+    async def signup(self, request: SignupRequest, background_tasks: BackgroundTasks) -> Tuple[User, str]:
         """
         Register a new user.
 
         Args:
             request: Signup request with email, password, username
+            background_tasks: Task queue for sending emails
 
         Returns:
             Tuple of (created user, verification code)
@@ -77,12 +78,24 @@ class AuthService:
 
         user = await self.user_repo.create(user_data)
 
-        # Send verification email
-        await send_verification_email(
+        # Send verification email via background task
+        background_tasks.add_task(
+            send_verification_email,
             email=request.email,
             code=verification_code,
             username=user.display_name or user.user_login
         )
+
+        # Notify admin of new user via background task
+        from app.core.config import settings
+        from app.service.email import send_admin_new_user_email_notification
+        if settings.ADMIN_EMAIL:
+            background_tasks.add_task(
+                send_admin_new_user_email_notification,
+                admin_email=settings.ADMIN_EMAIL,
+                new_username=user.user_login,
+                new_user_email=user.user_email
+            )
 
         return user, verification_code
 
@@ -169,13 +182,14 @@ class AuthService:
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
 
-    async def verify_email(self, email: str, code: str) -> User:
+    async def verify_email(self, email: str, code: str, background_tasks: BackgroundTasks) -> User:
         """
         Verify user email with code.
 
         Args:
             email: User's email
             code: Verification code from email
+            background_tasks: Task queue for welcome email
 
         Returns:
             Verified user
@@ -207,14 +221,23 @@ class AuthService:
         await self.user_repo.set_status(user, 1)
         await self.user_repo.set_activation_key(user, None)
 
+        # Send welcome email via background task
+        from app.service.email import send_welcome_email
+        background_tasks.add_task(
+            send_welcome_email,
+            email=user.user_email,
+            username=user.display_name or user.user_login
+        )
+
         return user
 
-    async def resend_verification(self, email: str) -> bool:
+    async def resend_verification(self, email: str, background_tasks: BackgroundTasks) -> bool:
         """
         Resend verification email.
 
         Args:
             email: User's email
+            background_tasks: Task queue for sending emails
 
         Returns:
             True if email sent
@@ -241,7 +264,9 @@ class AuthService:
         await self.user_repo.set_activation_key(user, verification_code)
 
         # Send email
-        await send_verification_email(
+        # Send email via background task
+        background_tasks.add_task(
+            send_verification_email,
             email=email,
             code=verification_code,
             username=user.display_name or user.user_login
@@ -249,12 +274,13 @@ class AuthService:
 
         return True
 
-    async def forgot_password(self, email: str) -> bool:
+    async def forgot_password(self, email: str, background_tasks: BackgroundTasks) -> bool:
         """
         Initiate password reset.
 
         Args:
             email: User's email
+            background_tasks: Task queue for sending emails
 
         Returns:
             True (always returns True to prevent email enumeration)
@@ -270,7 +296,9 @@ class AuthService:
         await self.user_repo.set_activation_key(user, reset_token)
 
         # Send email
-        await send_password_reset_email(
+        # Send email via background task
+        background_tasks.add_task(
+            send_password_reset_email,
             email=email,
             token=reset_token,
             username=user.display_name or user.user_login

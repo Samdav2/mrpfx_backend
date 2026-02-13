@@ -1,0 +1,22 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h2>MRFX Login Notification</h2>
+    <p>Hello <strong>{{ username }}</strong>,</p>
+    <p>Your MRFX account has been successfully accessed.</p>
+
+    <div class="box" style="text-align: left;">
+        <div class="box-label">Account Details</div>
+        <p><strong>Login:</strong> {{ login_id }}</p>
+        <p><strong>Platform:</strong> {{ platform }}</p>
+    </div>
+
+    <p>If this was you, no further action is needed.</p>
+
+    <a href="{{ dashboard_url }}" class="button">Go to Dashboard</a>
+
+    <p style="margin-top: 30px; font-size: 14px; color: #999;">If you did not authorize this login, please contact
+        support immediately.</p>
+</div>
+{% endblock %}

@@ -7,6 +7,7 @@ Supports:
 
 This allows imported WordPress users to authenticate with their existing passwords.
 """
+from passlib.hash import phpass, bcrypt as passlib_bcrypt
 import hashlib
 import base64
 import secrets
@@ -14,108 +15,8 @@ import string
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 from jose import jwt, JWTError
-import bcrypt
 
 from app.core.config import settings
-
-
-# phpass itoa64 alphabet used for encoding
-ITOA64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-
-
-def _encode64(input_bytes: bytes, count: int) -> str:
-    """
-    Encode bytes to phpass base64 format.
-    This is the custom base64 encoding used by phpass.
-    """
-    output = ""
-    i = 0
-    while i < count:
-        value = input_bytes[i]
-        i += 1
-        output += ITOA64[value & 0x3f]
-
-        if i < count:
-            value |= input_bytes[i] << 8
-        output += ITOA64[(value >> 6) & 0x3f]
-
-        if i >= count:
-            break
-        i += 1
-
-        if i < count:
-            value |= input_bytes[i] << 16
-        output += ITOA64[(value >> 12) & 0x3f]
-
-        if i >= count:
-            break
-        i += 1
-        output += ITOA64[(value >> 18) & 0x3f]
-
-    return output
-
-
-def _crypt_private(password: str, stored_hash: str) -> str:
-    """
-    Compute phpass portable hash for password verification.
-
-    Args:
-        password: Plain text password
-        stored_hash: The stored hash from WordPress database
-
-    Returns:
-        Computed hash to compare with stored_hash
-    """
-    output = "*0"
-    if stored_hash.startswith(output):
-        output = "*1"
-
-    # Check for valid phpass hash format
-    if not stored_hash.startswith("$P$") and not stored_hash.startswith("$H$"):
-        return output
-
-    # Extract iteration count (log2)
-    count_log2_char = stored_hash[3]
-    count_log2 = ITOA64.find(count_log2_char)
-
-    if count_log2 < 7 or count_log2 > 30:
-        return output
-
-    count = 1 << count_log2
-
-    # Extract salt (8 characters after the identifier)
-    salt = stored_hash[4:12]
-    if len(salt) != 8:
-        return output
-
-    # Compute hash
-    hash_value = hashlib.md5((salt + password).encode("utf-8")).digest()
-
-    for _ in range(count):
-        hash_value = hashlib.md5(hash_value + password.encode("utf-8")).digest()
-
-    output = stored_hash[:12]  # $P$B + salt
-    output += _encode64(hash_value, 16)
-
-    return output
-
-
-def verify_phpass_password(password: str, stored_hash: str) -> bool:
-    """
-    Verify a password against a WordPress phpass hash.
-
-    Args:
-        password: Plain text password to verify
-        stored_hash: WordPress phpass hash (starts with $P$ or $H$)
-
-    Returns:
-        True if password matches, False otherwise
-    """
-    if not stored_hash.startswith("$P$") and not stored_hash.startswith("$H$"):
-        return False
-
-    computed_hash = _crypt_private(password, stored_hash)
-    return computed_hash == stored_hash
 
 
 def verify_bcrypt_password(password: str, stored_hash: str) -> bool:
@@ -133,36 +34,41 @@ def verify_bcrypt_password(password: str, stored_hash: str) -> bool:
         True if password matches, False otherwise
     """
     try:
-        # PHP uses $2y$ but Python bcrypt uses $2b$
-        # They are compatible, but we need to handle the prefix
-        hash_to_check = stored_hash
-        if hash_to_check.startswith("$2y$"):
-            hash_to_check = "$2b$" + hash_to_check[4:]
+        # Normalize stored hash from DB (strip accidental whitespace)
+        hash_to_check = (stored_hash or "").strip()
 
-        return bcrypt.checkpw(
-            password.encode("utf-8"),
-            hash_to_check.encode("utf-8")
-        )
+        # Some WordPress installations (or plugins) store bcrypt hashes with a
+        # leading "$wp$" prefix, e.g. "$wp$2y$...". Strip that if present.
+        if hash_to_check.startswith("$wp$"):
+            # Remove "$wp$" to get valid bcrypt hash
+            # e.g. "$wp$2y$..." -> "$2y$..."
+            hash_to_check = "$" + hash_to_check[4:]
+
+        # Handle unusual "$2b$2y$" prefix by stripping the redundant "$2b"
+        if hash_to_check.startswith("$2b$2y$"):
+            hash_to_check = "$" + hash_to_check[4:]
+
+        # passlib.hash.bcrypt handles $2a, $2b, $2y automatically.
+        # It also handles the compatibility between PHP and Python bcrypt.
+        return passlib_bcrypt.verify(password, hash_to_check)
     except Exception:
         return False
 
 
 def hash_password(password: str) -> str:
     """
-    Hash a password using bcrypt (WordPress 6.8+ compatible).
+    Hash a password using WordPress-style phpass.
 
-    New passwords are always hashed with bcrypt for security.
-    The hash uses $2b$ prefix which is compatible with PHP's $2y$.
+    This ensures 100% compatibility with WordPress.
+    The hash will start with $P$...
 
     Args:
         password: Plain text password to hash
 
     Returns:
-        Bcrypt hash string
+        phpass hash string
     """
-    salt = bcrypt.gensalt(rounds=settings.BCRYPT_ROUNDS)
-    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
-    return hashed.decode("utf-8")
+    return phpass.hash(password)
 
 
 def verify_password(password: str, stored_hash: str) -> bool:
@@ -180,15 +86,24 @@ def verify_password(password: str, stored_hash: str) -> bool:
     Returns:
         True if password matches, False otherwise
     """
+    stored_hash = (stored_hash or "").strip()
     if not stored_hash:
         return False
 
-    # Check if it's a phpass hash (WordPress < 6.8)
-    if stored_hash.startswith("$P$") or stored_hash.startswith("$H$"):
-        return verify_phpass_password(password, stored_hash)
+    # Check if it's a phpass hash (WordPress default)
+    if (stored_hash.startswith("$P$") or
+        stored_hash.startswith("$H$") or
+        stored_hash.startswith("$2") or
+        stored_hash.startswith("$wp$")):
 
-    # Check if it's a bcrypt hash (WordPress 6.8+ or new users)
-    if stored_hash.startswith("$2"):
+        # Try phpass first (most common for WP)
+        if stored_hash.startswith("$P$") or stored_hash.startswith("$H$"):
+            try:
+                return phpass.verify(password, stored_hash)
+            except ValueError:
+                return False
+
+        # Try bcrypt (including legacy prefixes handled by verify_bcrypt_password)
         return verify_bcrypt_password(password, stored_hash)
 
     # Legacy MD5 hash (very old WordPress, not recommended)

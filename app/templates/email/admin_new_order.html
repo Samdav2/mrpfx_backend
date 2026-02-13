@@ -1,0 +1,23 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h2>New Order Received</h2>
+    <p>A new order has been placed on MRFX.</p>
+
+    <div class="box" style="text-align: left;">
+        <div class="box-label">Order Details</div>
+        <p><strong>Order ID:</strong> #{{ order_id }}</p>
+        <p><strong>Customer:</strong> {{ customer_name }} ({{ customer_email }})</p>
+        <p><strong>Total:</strong> {{ total }} {{ currency }}</p>
+        <div class="box-label" style="margin-top: 15px !important;">Items</div>
+        <ul style="margin: 5px 0 0 20px; padding: 0;">
+            {% for item in items %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <a href="{{ admin_order_url }}" class="button">Manage Order</a>
+</div>
+{% endblock %}

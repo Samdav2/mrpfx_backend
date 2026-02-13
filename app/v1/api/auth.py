@@ -1,7 +1,7 @@
 """
 Authentication API endpoints.
 """
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, BackgroundTasks
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.db.session import get_session
@@ -34,6 +34,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 )
 async def signup(
     request: SignupRequest,
+    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session)
 ):
     """
@@ -44,7 +45,7 @@ async def signup(
     - Sends verification email with 6-digit code
     """
     auth_service = AuthService(session)
-    user, _ = await auth_service.signup(request)
+    user, _ = await auth_service.signup(request, background_tasks)
 
     return MessageResponse(
         message=f"Account created successfully. Please check your email ({user.user_email}) for verification code.",
@@ -99,6 +100,7 @@ async def admin_login(
 )
 async def verify_email(
     request: VerifyEmailRequest,
+    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session)
 ):
     """
@@ -108,11 +110,7 @@ async def verify_email(
     - Activates the user account upon successful verification
     """
     auth_service = AuthService(session)
-    user = await auth_service.verify_email(request.email, request.code)
-
-    # Send welcome email
-    if user:
-        await send_welcome_email(user.user_email, user.display_name or user.user_login)
+    user = await auth_service.verify_email(request.email, request.code, background_tasks)
 
     return MessageResponse(
         message="Email verified successfully. You can now log in.",
@@ -127,6 +125,7 @@ async def verify_email(
 )
 async def resend_verification(
     request: ResendVerificationRequest,
+    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session)
 ):
     """
@@ -136,7 +135,7 @@ async def resend_verification(
     - Sends new verification email
     """
     auth_service = AuthService(session)
-    await auth_service.resend_verification(request.email)
+    await auth_service.resend_verification(request.email, background_tasks)
 
     return MessageResponse(
         message="Verification email sent. Please check your inbox.",
@@ -151,6 +150,7 @@ async def resend_verification(
 )
 async def forgot_password(
     request: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session)
 ):
     """
@@ -160,7 +160,7 @@ async def forgot_password(
     - Always returns success to prevent email enumeration
     """
     auth_service = AuthService(session)
-    await auth_service.forgot_password(request.email)
+    await auth_service.forgot_password(request.email, background_tasks)
 
     return MessageResponse(
         message="If an account exists with this email, you will receive a password reset link.",

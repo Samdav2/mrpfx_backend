@@ -1,0 +1,17 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h2>New User Registration</h2>
+    <p>A new user has registered on MRFX.</p>
+
+    <div class="box" style="text-align: left;">
+        <div class="box-label">User Details</div>
+        <p><strong>Username:</strong> {{ new_username }}</p>
+        <p><strong>Email:</strong> {{ new_user_email }}</p>
+        <p><strong>Date:</strong> {{ registration_date }}</p>
+    </div>
+
+    <a href="{{ admin_dashboard_url }}" class="button">View in Admin Panel</a>
+</div>
+{% endblock %}

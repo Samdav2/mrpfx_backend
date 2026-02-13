@@ -1,30 +1,201 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #1a1a2e; color: white; padding: 20px; text-align: center; }
-        .content { padding: 30px; background: #f9f9f9; }
-        .button { display: inline-block; padding: 12px 30px; background: #4f46e5; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-        .code { font-size: 32px; font-weight: bold; color: #1a1a2e; text-align: center; padding: 20px; background: white; border-radius: 8px; margin: 20px 0; letter-spacing: 8px; }
-        .order-details { background: white; padding: 15px; border-radius: 4px; margin: 20px 0; }
-        .status { font-weight: bold; color: #4f46e5; }
+        /* Modern Reset */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333333;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout */
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #f4f4f4;
+            padding-bottom: 40px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Header */
+        .header {
+            background-color: #000000;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        .logo-text {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+
+        .logo-accent {
+            color: #3b82f6;
+        }
+
+        /* Blue Accent */
+
+        /* Content */
+        .content {
+            padding: 40px;
+            line-height: 1.6;
+            font-size: 16px;
+            color: #4a4a4a;
+        }
+
+        /* Typography */
+        h1,
+        h2,
+        h3 {
+            color: #111111;
+            margin-top: 0;
+            font-weight: 600;
+        }
+
+        h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+
+        p {
+            margin-bottom: 20px;
+        }
+
+        strong {
+            color: #000000;
+        }
+
+        /* Elements */
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #3b82f6;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+            transition: background-color 0.3s ease;
+            margin: 10px 0;
+        }
+
+        .button:hover {
+            background-color: #2563eb;
+        }
+
+        .box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .box p {
+            margin: 5px 0;
+            font-size: 15px;
+        }
+
+        .box-label {
+            color: #64748b;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 8px !important;
+        }
+
+        .code-block {
+            font-family: 'Courier New', monospace;
+            background-color: #f1f5f9;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 24px;
+            letter-spacing: 5px;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 20px 0;
+            border: 1px dashed #cbd5e1;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #f4f4f4;
+            padding: 20px 40px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        .footer a {
+            color: #6b7280;
+            text-decoration: underline;
+        }
+
+        /* Mobile */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+                border-radius: 0;
+            }
+
+            .content {
+                padding: 25px 20px;
+            }
+
+            .header {
+                padding: 25px 20px;
+            }
+
+            .button {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>{{ app_name }}</h1>
-        </div>
-        <div class="content">
-            {% block content %}{% endblock %}
-        </div>
-        <div class="footer">
-            <p>&copy; {{ app_name }}. All rights reserved.</p>
+    <div class="wrapper">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo-text">MR<span class="logo-accent">FX</span></div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="content">
+                {% block content %}{% endblock %}
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>&copy; {{ current_year|default(2026) }} MRFX. All rights reserved.</p>
+                <p>Generated by MRFX Backend System</p>
+            </div>
         </div>
     </div>
 </body>
+
 </html>

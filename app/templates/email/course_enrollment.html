@@ -1,0 +1,19 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h2>Course Enrollment Successful!</h2>
+    <p>Hello <strong>{{ username }}</strong>,</p>
+    <p>You have successfully enrolled in the course:</p>
+
+    <div class="box" style="text-align: center;">
+        <h3 style="margin: 0;">{{ course_name }}</h3>
+    </div>
+
+    <p>We are excited effectively to aid you on your trading journey.</p>
+
+    <a href="{{ course_url }}" class="button">Start Learning Now</a>
+
+    <p style="margin-top: 20px;">If you have any questions, feel free to reply to this email.</p>
+</div>
+{% endblock %}
