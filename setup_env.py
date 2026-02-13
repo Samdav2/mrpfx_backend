@@ -6,43 +6,38 @@ packages = [
     # Core Framework
     "fastapi>=0.109.0",
     "uvicorn[standard]>=0.27.0",
+    "gunicorn>=21.2.0",
 
     # Database & ORM
-    "sqlalchemy>=2.0.0",
     "sqlmodel>=0.0.14",
-    "aiosqlite>=0.19.0",     # SQLite async support
-    "asyncpg>=0.29.0",       # PostgreSQL async support
+    "sqlalchemy[asyncio]>=2.0.25",
+    "asyncpg>=0.29.0",       # PostgreSQL
+    "aiosqlite>=0.20.0",     # SQLite
+    "PyMySQL>=1.1.0",
     "alembic>=1.13.0",
-    "PyMySQL>=1.1.0",        # Future MySQL connection support
-
-    # Validation & Settings
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "email-validator>=2.0.0",
 
     # Authentication & Security
     "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]>=1.7.4",
-    "bcrypt>=4.0.0",
+    "bcrypt>=4.1.2",
+    "passlib>=1.7.4",
     "python-multipart>=0.0.6",
 
-    # Game Engine & Logic
-    "networkx>=3.0",
+    # Settings & Validation
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "email-validator>=2.1.0",
 
-    # Caching & HTTP
-    "redis>=5.0.0",
+    # Development & Utils
     "httpx>=0.26.0",
-
-    # Rate Limiting
-    "slowapi>=0.1.9",
-
-    # Production Server & Performance
-    "gunicorn>=21.0.0",
-    "orjson>=3.9.0",
-
-    # Email
+    "Pillow>=11.1.0",
+    "phpserialize>=1.3",
+    "jinja2>=3.1.0",
     "aiosmtplib>=3.0.0",
-    "jinja2>=3.1.0"
+    "redis>=5.0.0",
+    "slowapi>=0.1.9",
+    "orjson>=3.9.0",
+    "networkx>=3.0"
 ]
 
 def install(package):
