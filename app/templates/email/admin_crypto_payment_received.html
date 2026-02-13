@@ -1,0 +1,12 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<h2>New Crypto Payment Received</h2>
+<p>A new crypto payment has been confirmed on the platform.</p>
+<div class="order-details">
+    <p><strong>User Email:</strong> {{ user_email }}</p>
+    <p><strong>Payment ID:</strong> {{ payment_id }}</p>
+    <p><strong>Status:</strong> <span class="status">{{ status|upper }}</span></p>
+</div>
+<p>Please check the admin dashboard for more details.</p>
+{% endblock %}

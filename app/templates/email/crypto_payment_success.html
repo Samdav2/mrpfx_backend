@@ -1,0 +1,15 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<h2>Payment Successful</h2>
+<p>Hello {{ user_name }},</p>
+<p>Your crypto payment has been successfully confirmed. Thank you for your purchase!</p>
+<div class="order-details">
+    <p><strong>Payment ID:</strong> {{ payment_id }}</p>
+    <p><strong>Status:</strong> <span class="status">{{ status|upper }}</span></p>
+</div>
+<p>You can now access your products/services from your dashboard.</p>
+<p style="text-align: center;">
+    <a href="{{ dashboard_url or '#' }}" class="button">Go to Dashboard</a>
+</p>
+{% endblock %}

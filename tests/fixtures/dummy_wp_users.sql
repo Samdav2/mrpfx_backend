@@ -1,0 +1,1 @@
+INSERT INTO `8jH_users` VALUES (1,'admin','$P$B55D6LjfHDkINU5wF.v2BuuzOCl4Ii1','admin','admin@example.com','http://localhost','2023-01-01 12:00:00','','0','Administrator'),(2,'testuser','$P$B55D6LjfHDkINU5wF.v2BuuzOCl4Ii1','testuser','test@example.com','','2023-01-02 12:00:00','','0','Test User');

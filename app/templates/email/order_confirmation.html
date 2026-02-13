@@ -1,0 +1,17 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<h2>Order Confirmed</h2>
+<p>Thank you for your order! Here are the details:</p>
+<div class="order-details">
+    <p><strong>Order ID:</strong> #{{ order_id }}</p>
+    <p><strong>Total:</strong> {{ total }} {{ currency }}</p>
+    <p><strong>Items:</strong></p>
+    <ul>
+        {% for item in items %}
+        <li>{{ item }}</li>
+        {% endfor %}
+    </ul>
+</div>
+<p>We will notify you when your order status changes.</p>
+{% endblock %}

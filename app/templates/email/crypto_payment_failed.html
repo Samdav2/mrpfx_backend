@@ -1,0 +1,12 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<h2>Payment Failed</h2>
+<p>Hello {{ user_name }},</p>
+<p>Unfortunately, your crypto payment could not be processed successfully.</p>
+<div class="order-details">
+    <p><strong>Payment ID:</strong> {{ payment_id }}</p>
+    <p><strong>Status:</strong> <span class="status">{{ status|upper }}</span></p>
+</div>
+<p>Please try again or contact support if you believe this is an error.</p>
+{% endblock %}

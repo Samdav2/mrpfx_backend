@@ -1,0 +1,13 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<h2>Partial Payment Received</h2>
+<p>Hello {{ user_name }},</p>
+<p>We have received a partial payment for your order. To complete the transaction, please ensure the full amount is
+    paid.</p>
+<div class="order-details">
+    <p><strong>Payment ID:</strong> {{ payment_id }}</p>
+    <p><strong>Status:</strong> <span class="status">{{ status|upper }}</span></p>
+</div>
+<p>If you have any questions, please contact our support team.</p>
+{% endblock %}
