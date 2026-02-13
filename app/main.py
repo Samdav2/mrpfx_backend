@@ -63,7 +63,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Security: Trusted Host
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["mrpfx.vercel.app", "*.mrpfx.vercel.app", "localhost", "127.0.0.1", "0.0.0.0"]
+    allowed_hosts=["*"]  # Allow on Render and other platforms
 )
 
 # Performance: GZip Compression
