@@ -1,7 +1,7 @@
 """
 Authentication API endpoints.
 """
-from fastapi import APIRouter, Depends, status, BackgroundTasks
+from fastapi import APIRouter, Depends, status, BackgroundTasks, Request
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.db.session import get_session
@@ -21,6 +21,7 @@ from app.schema.auth import (
 from app.schema.user import UserResponse, ChangePasswordRequest
 from app.dependencies.auth import get_current_active_user, get_current_user
 from app.model.user import User
+from app.core.limiter import limiter
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -32,8 +33,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user"
 )
+@limiter.limit("5/minute")
 async def signup(
-    request: SignupRequest,
+    request: Request,
+    signup_request: SignupRequest,
     background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session)
 ):
@@ -45,7 +48,7 @@ async def signup(
     - Sends verification email with 6-digit code
     """
     auth_service = AuthService(session)
-    user, _ = await auth_service.signup(request, background_tasks)
+    user, _ = await auth_service.signup(signup_request, background_tasks)
 
     return MessageResponse(
         message=f"Account created successfully. Please check your email ({user.user_email}) for verification code.",
@@ -58,8 +61,10 @@ async def signup(
     response_model=TokenResponse,
     summary="User login"
 )
+@limiter.limit("10/minute")
 async def login(
-    request: LoginRequest,
+    request: Request,
+    login_request: LoginRequest,
     session: AsyncSession = Depends(get_session)
 ):
     """
@@ -70,7 +75,7 @@ async def login(
     - Returns access token and refresh token
     """
     auth_service = AuthService(session)
-    return await auth_service.login(request)
+    return await auth_service.login(login_request)
 
 
 @router.post(
@@ -78,8 +83,10 @@ async def login(
     response_model=TokenResponse,
     summary="Admin login"
 )
+@limiter.limit("5/minute")
 async def admin_login(
-    request: LoginRequest,
+    request: Request,
+    login_request: LoginRequest,
     session: AsyncSession = Depends(get_session)
 ):
     """
@@ -90,7 +97,7 @@ async def admin_login(
     - Returns access token and refresh token
     """
     auth_service = AuthService(session)
-    return await auth_service.admin_login(request)
+    return await auth_service.admin_login(login_request)
 
 
 @router.post(

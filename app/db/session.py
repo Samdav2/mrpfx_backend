@@ -17,9 +17,10 @@ if settings.USE_SQLITE:
 else:
     engine = create_async_engine(
         url=settings.DATABASE_URL,
-        max_overflow=2,
+        max_overflow=10,
         future=True,
-        pool_size=10,
+        pool_size=20,
+        pool_pre_ping=True,  # Check connection liveness
         echo=settings.DEBUG,
     )
 

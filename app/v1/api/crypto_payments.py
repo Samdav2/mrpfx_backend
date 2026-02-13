@@ -14,12 +14,15 @@ from app.schema.crypto_payment import (
     NOWPaymentsIPNPayload,
 )
 from app.service.nowpayments_service import NOWPaymentsService
+from app.core.limiter import limiter
 
 router = APIRouter(prefix="/crypto-payments", tags=["Crypto Payments"])
 
 
 @router.get("/status")
+@limiter.limit("20/minute")
 async def get_api_status(
+    request: Request,
     session: AsyncSession = Depends(get_session),
 ):
     """Check NOWPayments API status"""
@@ -28,7 +31,9 @@ async def get_api_status(
 
 
 @router.get("/currencies")
+@limiter.limit("20/minute")
 async def get_available_currencies(
+    request: Request,
     session: AsyncSession = Depends(get_session),
 ):
     """Get list of available cryptocurrencies"""
@@ -38,7 +43,9 @@ async def get_available_currencies(
 
 
 @router.get("/min-amount")
+@limiter.limit("20/minute")
 async def get_minimum_amount(
+    request: Request,
     currency_from: str,
     currency_to: str | None = None,
     is_fixed_rate: bool = False,
@@ -56,7 +63,9 @@ async def get_minimum_amount(
 
 
 @router.get("/estimate")
+@limiter.limit("20/minute")
 async def get_estimated_price(
+    request: Request,
     amount: float,
     currency_from: str,
     currency_to: str,
@@ -72,7 +81,9 @@ async def get_estimated_price(
 
 
 @router.post("/invoice", response_model=CryptoPaymentRead)
+@limiter.limit("5/minute")
 async def create_invoice(
+    request: Request,
     invoice_data: NOWPaymentsInvoiceRequest,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -83,7 +94,9 @@ async def create_invoice(
 
 
 @router.post("/payment", response_model=CryptoPaymentRead)
+@limiter.limit("5/minute")
 async def create_payment(
+    request: Request,
     payment_data: NOWPaymentsPaymentRequest,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),

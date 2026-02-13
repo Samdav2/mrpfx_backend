@@ -7,10 +7,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 import logging
 import os
 
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.db.session import ini_db
 from app.v1.api.auth import router as auth_router
 from app.v1.api.crypto_payments import router as crypto_payment_router
@@ -50,10 +56,29 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure CORS
+# Rate Limit Exception Handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Security: Trusted Host
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["mrpfx.vercel.app", "*.mrpfx.vercel.app", "localhost", "127.0.0.1", "0.0.0.0"]
+)
+
+# Performance: GZip Compression
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Security: CORS
+origins = [
+    "https://mrpfx.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:8000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

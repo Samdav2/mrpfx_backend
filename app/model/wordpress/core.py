@@ -14,10 +14,10 @@ class WPUser(SQLModel, table=True):
     __tablename__ = "8jH_users"
 
     ID: Optional[int] = Field(default=None, primary_key=True)
-    user_login: str = Field(max_length=60, default="")
+    user_login: str = Field(max_length=60, default="", index=True)
     user_pass: str = Field(max_length=255, default="")
-    user_nicename: str = Field(max_length=50, default="")
-    user_email: str = Field(max_length=100, default="")
+    user_nicename: str = Field(max_length=50, default="", index=True)
+    user_email: str = Field(max_length=100, default="", index=True)
     user_url: str = Field(max_length=100, default="")
     user_registered: datetime = Field(default_factory=datetime.now)
     user_activation_key: str = Field(max_length=255, default="")
@@ -30,8 +30,8 @@ class WPUserMeta(SQLModel, table=True):
     __tablename__ = "8jH_usermeta"
 
     umeta_id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(default=0, foreign_key="8jH_users.ID")
-    meta_key: Optional[str] = Field(default=None, max_length=255)
+    user_id: int = Field(default=0, foreign_key="8jH_users.ID", index=True)
+    meta_key: Optional[str] = Field(default=None, max_length=255, index=True)
     meta_value: Optional[str] = Field(default=None)
 
 
@@ -50,16 +50,16 @@ class WPPost(SQLModel, table=True):
     comment_status: str = Field(max_length=20, default="open")
     ping_status: str = Field(max_length=20, default="open")
     post_password: str = Field(max_length=255, default="")
-    post_name: str = Field(max_length=200, default="")
+    post_name: str = Field(max_length=200, default="", index=True)
     to_ping: str = Field(default="")
     pinged: str = Field(default="")
     post_modified: datetime = Field(default_factory=datetime.now)
     post_modified_gmt: datetime = Field(default_factory=datetime.now)
     post_content_filtered: str = Field(default="")
-    post_parent: int = Field(default=0)
+    post_parent: int = Field(default=0, index=True)
     guid: str = Field(max_length=255, default="")
     menu_order: int = Field(default=0)
-    post_type: str = Field(max_length=20, default="post")
+    post_type: str = Field(max_length=20, default="post", index=True)
     post_mime_type: str = Field(max_length=100, default="")
     comment_count: int = Field(default=0)
 
@@ -69,8 +69,8 @@ class WPPostMeta(SQLModel, table=True):
     __tablename__ = "8jH_postmeta"
 
     meta_id: Optional[int] = Field(default=None, primary_key=True)
-    post_id: int = Field(default=0, foreign_key="8jH_posts.ID")
-    meta_key: Optional[str] = Field(default=None, max_length=255)
+    post_id: int = Field(default=0, foreign_key="8jH_posts.ID", index=True)
+    meta_key: Optional[str] = Field(default=None, max_length=255, index=True)
     meta_value: Optional[str] = Field(default=None)
 
 
@@ -110,9 +110,9 @@ class WPOption(SQLModel, table=True):
     __tablename__ = "8jH_options"
 
     option_id: Optional[int] = Field(default=None, primary_key=True)
-    option_name: str = Field(max_length=191, default="")
+    option_name: str = Field(max_length=191, default="", unique=True, index=True)
     option_value: str = Field(default="")
-    autoload: str = Field(max_length=20, default="yes")
+    autoload: str = Field(max_length=20, default="yes", index=True)
 
 
 class WPTerm(SQLModel, table=True):
