@@ -7,6 +7,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from sqlalchemy.dialects.mysql import BIGINT
+
 
 
 # =============================================================================
@@ -17,7 +19,7 @@ class JetpackSyncQueue(SQLModel, table=True):
     """Jetpack sync queue (8jH_jetpack_sync_queue)"""
     __tablename__ = "8jH_jetpack_sync_queue"
 
-    ID: Optional[int] = Field(default=None, primary_key=True)
+    ID: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     queue_id: str = Field(max_length=50, default="")
     event_id: str = Field(max_length=100, default="")
     event_payload: str = Field(default="")
@@ -32,7 +34,7 @@ class WPMailSMTPDebugEvent(SQLModel, table=True):
     """WP Mail SMTP debug events (8jH_wpmailsmtp_debug_events)"""
     __tablename__ = "8jH_wpmailsmtp_debug_events"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     content: Optional[str] = Field(default=None)
     initiator: Optional[str] = Field(default=None)
     event_type: int = Field(default=0)
@@ -43,7 +45,7 @@ class WPMailSMTPTaskMeta(SQLModel, table=True):
     """WP Mail SMTP task meta (8jH_wpmailsmtp_tasks_meta)"""
     __tablename__ = "8jH_wpmailsmtp_tasks_meta"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     action: str = Field(max_length=255, default="")
     data: str = Field(default="")
     date: datetime = Field(default_factory=datetime.now)
@@ -53,7 +55,7 @@ class WPMailLog(SQLModel, table=True):
     """WP Mail Logging (8jH_wpml_mails)"""
     __tablename__ = "8jH_wpml_mails"
 
-    mail_id: Optional[int] = Field(default=None, primary_key=True)
+    mail_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     timestamp: Optional[datetime] = Field(default=None)
     host: str = Field(max_length=200, default="0")
     receiver: str = Field(max_length=200, default="0")
@@ -73,7 +75,7 @@ class WPO404Detector(SQLModel, table=True):
     """WP-Optimize 404 detector (8jH_wpo_404_detector)"""
     __tablename__ = "8jH_wpo_404_detector"
 
-    ID: Optional[int] = Field(default=None, primary_key=True)
+    ID: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     url: str = Field(default="")
     request_timestamp: int = Field(default=0)
     request_count: int = Field(default=0)
@@ -88,8 +90,8 @@ class TMTask(SQLModel, table=True):
     """Task Manager tasks (8jH_tm_tasks)"""
     __tablename__ = "8jH_tm_tasks"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(default=0, foreign_key="8jH_users.ID")
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
+    user_id: int = Field(default=0, foreign_key="8jH_users.ID", sa_type=BIGINT(unsigned=True))
     type: str = Field(max_length=300, default="")
     class_identifier: Optional[str] = Field(default="0", max_length=300)
     attempts: Optional[int] = Field(default=0)
@@ -103,7 +105,7 @@ class TMTaskMeta(SQLModel, table=True):
     """Task Manager task meta (8jH_tm_taskmeta)"""
     __tablename__ = "8jH_tm_taskmeta"
 
-    meta_id: Optional[int] = Field(default=None, primary_key=True)
+    meta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     task_id: int = Field(default=0, foreign_key="8jH_tm_tasks.id")
     meta_key: Optional[str] = Field(default=None, max_length=255)
     meta_value: Optional[str] = Field(default=None)
@@ -117,7 +119,7 @@ class WPWebhooksAuth(SQLModel, table=True):
     """WP Webhooks Pro authentication (8jH_wpwhpro_authentication)"""
     __tablename__ = "8jH_wpwhpro_authentication"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     name: Optional[str] = Field(default=None, max_length=100)
     auth_type: Optional[str] = Field(default=None, max_length=100)
     template: Optional[str] = Field(default=None)
@@ -132,7 +134,7 @@ class XCurrency(SQLModel, table=True):
     """X Currency settings (8jH_x_currency)"""
     __tablename__ = "8jH_x_currency"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     active: Optional[int] = Field(default=None)
     name: str = Field(max_length=100, default="")
     code: str = Field(max_length=50, default="")
@@ -161,7 +163,7 @@ class SkrillTransactionLog(SQLModel, table=True):
     """Skrill transaction log (8jH_skrill_transaction_log)"""
     __tablename__ = "8jH_skrill_transaction_log"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     order_id: int = Field(default=0)
     transaction_id: Optional[str] = Field(default=None, max_length=100)
     mb_transaction_id: str = Field(max_length=50, default="")
@@ -186,7 +188,7 @@ class WCSPaymentRetry(SQLModel, table=True):
     """WooCommerce Subscriptions payment retries (8jH_wcs_payment_retries)"""
     __tablename__ = "8jH_wcs_payment_retries"
 
-    retry_id: Optional[int] = Field(default=None, primary_key=True)
+    retry_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     order_id: int = Field(default=0)
     status: str = Field(max_length=255, default="")
     date_gmt: Optional[datetime] = Field(default=None)
@@ -201,7 +203,7 @@ class WCAdminNote(SQLModel, table=True):
     """WC Admin notes (8jH_wc_admin_notes)"""
     __tablename__ = "8jH_wc_admin_notes"
 
-    note_id: Optional[int] = Field(default=None, primary_key=True)
+    note_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     name: str = Field(max_length=255, default="")
     type: str = Field(max_length=20, default="")
     locale: str = Field(max_length=20, default="")
@@ -224,7 +226,7 @@ class WCAdminNoteAction(SQLModel, table=True):
     """WC Admin note actions (8jH_wc_admin_note_actions)"""
     __tablename__ = "8jH_wc_admin_note_actions"
 
-    action_id: Optional[int] = Field(default=None, primary_key=True)
+    action_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     note_id: int = Field(default=0, foreign_key="8jH_wc_admin_notes.note_id")
     name: str = Field(max_length=255, default="")
     label: str = Field(max_length=255, default="")
@@ -243,7 +245,7 @@ class WPFMBackup(SQLModel, table=True):
     """WP File Manager backup (8jH_wpfm_backup)"""
     __tablename__ = "8jH_wpfm_backup"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     backup_name: Optional[str] = Field(default=None)
     backup_date: Optional[str] = Field(default=None)
 
@@ -256,7 +258,7 @@ class QuadsStats(SQLModel, table=True):
     """Quads ad statistics (8jH_quads_stats)"""
     __tablename__ = "8jH_quads_stats"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     ad_id: int = Field(default=0)
     ad_thetime: int = Field(default=0)
     ad_clicks: int = Field(default=0)
@@ -276,7 +278,7 @@ class OCRecipientsImport(SQLModel, table=True):
     """OC SMS recipients import (8jH_oc_recipients_import)"""
     __tablename__ = "8jH_oc_recipients_import"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     phone_number: int = Field(default=0)
     country_code: int = Field(default=0)
     post_id: int = Field(default=0)

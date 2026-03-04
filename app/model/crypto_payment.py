@@ -2,13 +2,15 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 from sqlmodel import SQLModel, Field, Column, JSON
 from typing import Optional, Dict, Any
+from sqlalchemy.dialects.mysql import BIGINT
+
 
 class CryptoPayment(SQLModel, table=True):
     """Database model for crypto payments."""
     __tablename__ = "8jH_cryptopayments"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    user_id: int = Field(foreign_key="8jH_users.ID", index=True)
+    user_id: int = Field(foreign_key="8jH_users.ID", index=True, sa_type=BIGINT(unsigned=True))
 
     payment_id: Optional[str] = Field(default=None, index=True)
     invoice_id: Optional[str] = Field(default=None, index=True)

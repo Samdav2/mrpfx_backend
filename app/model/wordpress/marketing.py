@@ -16,7 +16,7 @@ class HustleModule(SQLModel, table=True):
     """Hustle modules (8jH_hustle_modules)"""
     __tablename__ = "8jH_hustle_modules"
 
-    module_id: Optional[int] = Field(default=None, primary_key=True)
+    module_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     blog_id: int = Field(default=0)
     module_name: str = Field(max_length=255, default="")
     module_type: str = Field(max_length=100, default="")
@@ -28,7 +28,7 @@ class HustleModuleMeta(SQLModel, table=True):
     """Hustle module meta (8jH_hustle_modules_meta)"""
     __tablename__ = "8jH_hustle_modules_meta"
 
-    meta_id: Optional[int] = Field(default=None, primary_key=True)
+    meta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     module_id: int = Field(default=0, foreign_key="8jH_hustle_modules.module_id")
     meta_key: Optional[str] = Field(default=None, max_length=191)
     meta_value: Optional[str] = Field(default=None)
@@ -38,7 +38,7 @@ class HustleEntry(SQLModel, table=True):
     """Hustle entries/submissions (8jH_hustle_entries)"""
     __tablename__ = "8jH_hustle_entries"
 
-    entry_id: Optional[int] = Field(default=None, primary_key=True)
+    entry_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     entry_type: str = Field(max_length=191, default="")
     module_id: int = Field(default=0, foreign_key="8jH_hustle_modules.module_id")
     date_created: Optional[datetime] = Field(default=None)
@@ -48,7 +48,7 @@ class HustleEntryMeta(SQLModel, table=True):
     """Hustle entry meta (8jH_hustle_entries_meta)"""
     __tablename__ = "8jH_hustle_entries_meta"
 
-    meta_id: Optional[int] = Field(default=None, primary_key=True)
+    meta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     entry_id: int = Field(default=0, foreign_key="8jH_hustle_entries.entry_id")
     meta_key: Optional[str] = Field(default=None, max_length=191)
     meta_value: Optional[str] = Field(default=None)
@@ -60,7 +60,7 @@ class HustleTracking(SQLModel, table=True):
     """Hustle tracking data (8jH_hustle_tracking)"""
     __tablename__ = "8jH_hustle_tracking"
 
-    tracking_id: Optional[int] = Field(default=None, primary_key=True)
+    tracking_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     module_id: int = Field(default=0, foreign_key="8jH_hustle_modules.module_id")
     page_id: int = Field(default=0)
     module_type: str = Field(max_length=100, default="")
@@ -79,7 +79,7 @@ class OpandaLead(SQLModel, table=True):
     """OptinPanda leads (8jH_opanda_leads)"""
     __tablename__ = "8jH_opanda_leads"
 
-    ID: Optional[int] = Field(default=None, primary_key=True)
+    ID: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     lead_display_name: Optional[str] = Field(default=None, max_length=255)
     lead_name: Optional[str] = Field(default=None, max_length=100)
     lead_family: Optional[str] = Field(default=None, max_length=100)
@@ -101,7 +101,7 @@ class OpandaLeadField(SQLModel, table=True):
     """OptinPanda lead fields (8jH_opanda_leads_fields)"""
     __tablename__ = "8jH_opanda_leads_fields"
 
-    lead_id: int = Field(primary_key=True)
+    lead_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
     field_name: str = Field(primary_key=True, max_length=150)
     field_value: str = Field(default="")
     field_custom: int = Field(default=0)
@@ -111,7 +111,7 @@ class OpandaStat(SQLModel, table=True):
     """OptinPanda statistics (8jH_opanda_stats_v2)"""
     __tablename__ = "8jH_opanda_stats_v2"
 
-    ID: Optional[int] = Field(default=None, primary_key=True)
+    ID: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     aggregate_date: datetime = Field(default_factory=datetime.now)
     post_id: int = Field(default=0)
     item_id: int = Field(default=0)
@@ -123,7 +123,7 @@ class MTSLockerStats(SQLModel, table=True):
     """MTS Locker statistics (8jH_mts_locker_stats)"""
     __tablename__ = "8jH_mts_locker_stats"
 
-    ID: Optional[int] = Field(default=None, primary_key=True)
+    ID: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     aggregate_date: datetime = Field(default_factory=datetime.now)
     post_id: int = Field(default=0)
     locker_id: int = Field(default=0)

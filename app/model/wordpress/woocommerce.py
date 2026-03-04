@@ -6,13 +6,15 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from sqlalchemy.dialects.mysql import BIGINT
+
 
 
 class WCOrder(SQLModel, table=True):
     """WooCommerce orders table (8jH_wc_orders)"""
     __tablename__ = "8jH_wc_orders"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     status: Optional[str] = Field(default=None, max_length=20)
     currency: Optional[str] = Field(default=None, max_length=10)
     type: Optional[str] = Field(default=None, max_length=20)
@@ -35,7 +37,7 @@ class WCOrderMeta(SQLModel, table=True):
     """WooCommerce order meta table (8jH_wc_orders_meta)"""
     __tablename__ = "8jH_wc_orders_meta"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     order_id: Optional[int] = Field(default=None, foreign_key="8jH_wc_orders.id")
     meta_key: Optional[str] = Field(default=None, max_length=255)
     meta_value: Optional[str] = Field(default=None)
@@ -45,7 +47,7 @@ class WCOrderAddress(SQLModel, table=True):
     """WooCommerce order addresses table (8jH_wc_order_addresses)"""
     __tablename__ = "8jH_wc_order_addresses"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     order_id: int = Field(foreign_key="8jH_wc_orders.id")
     address_type: Optional[str] = Field(default=None, max_length=20)
     first_name: Optional[str] = Field(default=None)
@@ -65,7 +67,7 @@ class WCOrderOperationalData(SQLModel, table=True):
     """WooCommerce order operational data (8jH_wc_order_operational_data)"""
     __tablename__ = "8jH_wc_order_operational_data"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     order_id: Optional[int] = Field(default=None, foreign_key="8jH_wc_orders.id")
     created_via: Optional[str] = Field(default=None, max_length=100)
     woocommerce_version: Optional[str] = Field(default=None, max_length=20)
@@ -89,7 +91,7 @@ class WCOrderItem(SQLModel, table=True):
     """WooCommerce order items (8jH_woocommerce_order_items)"""
     __tablename__ = "8jH_woocommerce_order_items"
 
-    order_item_id: Optional[int] = Field(default=None, primary_key=True)
+    order_item_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     order_item_name: str = Field(default="")
     order_item_type: str = Field(max_length=200, default="")
     order_id: int = Field(foreign_key="8jH_wc_orders.id")
@@ -99,7 +101,7 @@ class WCOrderItemMeta(SQLModel, table=True):
     """WooCommerce order item meta (8jH_woocommerce_order_itemmeta)"""
     __tablename__ = "8jH_woocommerce_order_itemmeta"
 
-    meta_id: Optional[int] = Field(default=None, primary_key=True)
+    meta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     order_item_id: int = Field(foreign_key="8jH_woocommerce_order_items.order_item_id")
     meta_key: Optional[str] = Field(default=None, max_length=255)
     meta_value: Optional[str] = Field(default=None)
@@ -109,7 +111,7 @@ class WCOrderStats(SQLModel, table=True):
     """WooCommerce order stats (8jH_wc_order_stats)"""
     __tablename__ = "8jH_wc_order_stats"
 
-    order_id: int = Field(primary_key=True)
+    order_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
     parent_id: int = Field(default=0)
     date_created: datetime = Field(default_factory=datetime.now)
     date_created_gmt: datetime = Field(default_factory=datetime.now)
@@ -129,8 +131,8 @@ class WCCustomerLookup(SQLModel, table=True):
     """WooCommerce customer lookup (8jH_wc_customer_lookup)"""
     __tablename__ = "8jH_wc_customer_lookup"
 
-    customer_id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: Optional[int] = Field(default=None, foreign_key="8jH_users.ID")
+    customer_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
+    user_id: Optional[int] = Field(default=None, foreign_key="8jH_users.ID", sa_type=BIGINT(unsigned=True))
     username: str = Field(max_length=60, default="")
     first_name: str = Field(max_length=255, default="")
     last_name: str = Field(max_length=255, default="")
@@ -147,7 +149,7 @@ class WCProductMetaLookup(SQLModel, table=True):
     """WooCommerce product meta lookup (8jH_wc_product_meta_lookup)"""
     __tablename__ = "8jH_wc_product_meta_lookup"
 
-    product_id: int = Field(primary_key=True)
+    product_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
     sku: Optional[str] = Field(default="", max_length=100)
     virtual: Optional[bool] = Field(default=False)
     downloadable: Optional[bool] = Field(default=False)
@@ -168,7 +170,7 @@ class WCSession(SQLModel, table=True):
     """WooCommerce sessions (8jH_woocommerce_sessions)"""
     __tablename__ = "8jH_woocommerce_sessions"
 
-    session_id: Optional[int] = Field(default=None, primary_key=True)
+    session_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     session_key: str = Field(max_length=32, default="")
     session_value: str = Field(default="")
     session_expiry: int = Field(default=0)
@@ -178,10 +180,10 @@ class WCWebhook(SQLModel, table=True):
     """WooCommerce webhooks (8jH_wc_webhooks)"""
     __tablename__ = "8jH_wc_webhooks"
 
-    webhook_id: Optional[int] = Field(default=None, primary_key=True)
+    webhook_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     status: str = Field(max_length=200, default="")
     name: str = Field(default="")
-    user_id: int = Field(foreign_key="8jH_users.ID")
+    user_id: int = Field(foreign_key="8jH_users.ID", sa_type=BIGINT(unsigned=True))
     delivery_url: str = Field(default="")
     secret: str = Field(default="")
     topic: str = Field(max_length=200, default="")
@@ -198,8 +200,8 @@ class WCApiKey(SQLModel, table=True):
     """WooCommerce API keys (8jH_woocommerce_api_keys)"""
     __tablename__ = "8jH_woocommerce_api_keys"
 
-    key_id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="8jH_users.ID")
+    key_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
+    user_id: int = Field(foreign_key="8jH_users.ID", sa_type=BIGINT(unsigned=True))
     description: Optional[str] = Field(default=None, max_length=200)
     permissions: str = Field(max_length=10, default="")
     consumer_key: str = Field(max_length=64, default="")
@@ -213,13 +215,13 @@ class WCDownloadableProductPermission(SQLModel, table=True):
     """WooCommerce downloadable product permissions (8jH_woocommerce_downloadable_product_permissions)"""
     __tablename__ = "8jH_woocommerce_downloadable_product_permissions"
 
-    permission_id: Optional[int] = Field(default=None, primary_key=True)
+    permission_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     download_id: str = Field(max_length=36, default="")
     product_id: int = Field(default=0)
     order_id: int = Field(default=0)
     order_key: str = Field(max_length=200, default="")
     user_email: str = Field(max_length=200, default="")
-    user_id: Optional[int] = Field(default=None, foreign_key="8jH_users.ID")
+    user_id: Optional[int] = Field(default=None, foreign_key="8jH_users.ID", sa_type=BIGINT(unsigned=True))
     downloads_remaining: Optional[str] = Field(default=None, max_length=9)
     access_granted: datetime = Field(default_factory=datetime.now)
     access_expires: Optional[datetime] = Field(default=None)
@@ -230,10 +232,10 @@ class WCPaymentToken(SQLModel, table=True):
     """WooCommerce payment tokens (8jH_woocommerce_payment_tokens)"""
     __tablename__ = "8jH_woocommerce_payment_tokens"
 
-    token_id: Optional[int] = Field(default=None, primary_key=True)
+    token_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     gateway_id: str = Field(max_length=200, default="")
     token: str = Field(default="")
-    user_id: int = Field(default=0, foreign_key="8jH_users.ID")
+    user_id: int = Field(default=0, foreign_key="8jH_users.ID", sa_type=BIGINT(unsigned=True))
     type: str = Field(max_length=200, default="")
     is_default: bool = Field(default=False)
 
@@ -242,7 +244,7 @@ class WCPaymentTokenMeta(SQLModel, table=True):
     """WooCommerce payment token meta (8jH_woocommerce_payment_tokenmeta)"""
     __tablename__ = "8jH_woocommerce_payment_tokenmeta"
 
-    meta_id: Optional[int] = Field(default=None, primary_key=True)
+    meta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     payment_token_id: int = Field(foreign_key="8jH_woocommerce_payment_tokens.token_id")
     meta_key: Optional[str] = Field(default=None, max_length=255)
     meta_value: Optional[str] = Field(default=None)
@@ -252,7 +254,7 @@ class WCShippingZone(SQLModel, table=True):
     """WooCommerce shipping zones (8jH_woocommerce_shipping_zones)"""
     __tablename__ = "8jH_woocommerce_shipping_zones"
 
-    zone_id: Optional[int] = Field(default=None, primary_key=True)
+    zone_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     zone_name: str = Field(max_length=200, default="")
     zone_order: int = Field(default=0)
 
@@ -261,7 +263,7 @@ class WCShippingZoneLocation(SQLModel, table=True):
     """WooCommerce shipping zone locations (8jH_woocommerce_shipping_zone_locations)"""
     __tablename__ = "8jH_woocommerce_shipping_zone_locations"
 
-    location_id: Optional[int] = Field(default=None, primary_key=True)
+    location_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     zone_id: int = Field(foreign_key="8jH_woocommerce_shipping_zones.zone_id")
     location_code: str = Field(max_length=200, default="")
     location_type: str = Field(max_length=40, default="")
@@ -271,7 +273,7 @@ class WCShippingZoneMethod(SQLModel, table=True):
     """WooCommerce shipping zone methods (8jH_woocommerce_shipping_zone_methods)"""
     __tablename__ = "8jH_woocommerce_shipping_zone_methods"
 
-    instance_id: Optional[int] = Field(default=None, primary_key=True)
+    instance_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     zone_id: int = Field(foreign_key="8jH_woocommerce_shipping_zones.zone_id")
     method_id: str = Field(max_length=200, default="")
     method_order: int = Field(default=0)
@@ -282,7 +284,7 @@ class WCTaxRate(SQLModel, table=True):
     """WooCommerce tax rates (8jH_woocommerce_tax_rates)"""
     __tablename__ = "8jH_woocommerce_tax_rates"
 
-    tax_rate_id: Optional[int] = Field(default=None, primary_key=True)
+    tax_rate_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     tax_rate_country: str = Field(max_length=2, default="")
     tax_rate_state: str = Field(max_length=200, default="")
     tax_rate: str = Field(max_length=8, default="")
@@ -298,8 +300,8 @@ class WCOrderTaxLookup(SQLModel, table=True):
     """WooCommerce order tax lookup (8jH_wc_order_tax_lookup)"""
     __tablename__ = "8jH_wc_order_tax_lookup"
 
-    order_id: int = Field(primary_key=True)
-    tax_rate_id: int = Field(primary_key=True)
+    order_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
+    tax_rate_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
     date_created: datetime = Field(default_factory=datetime.now)
     shipping_tax: float = Field(default=0)
     order_tax: float = Field(default=0)
@@ -310,7 +312,7 @@ class WCProductAttributeLookup(SQLModel, table=True):
     """WooCommerce product attribute lookup (8jH_wc_product_attributes_lookup)"""
     __tablename__ = "8jH_wc_product_attributes_lookup"
 
-    product_id: int = Field(primary_key=True)
+    product_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
     product_or_parent_id: int = Field(default=0)
     taxonomy: str = Field(max_length=32, default="")
     term_id: int = Field(default=0)
@@ -322,8 +324,8 @@ class WCReservedStock(SQLModel, table=True):
     """WooCommerce reserved stock (8jH_wc_reserved_stock)"""
     __tablename__ = "8jH_wc_reserved_stock"
 
-    order_id: int = Field(primary_key=True)
-    product_id: int = Field(primary_key=True)
+    order_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
+    product_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
     stock_quantity: float = Field(default=0)
     timestamp: datetime = Field(default_factory=datetime.now)
     expires: datetime = Field(default_factory=datetime.now)
@@ -333,7 +335,7 @@ class WCTaxRateClass(SQLModel, table=True):
     """WooCommerce tax rate classes (8jH_wc_tax_rate_classes)"""
     __tablename__ = "8jH_wc_tax_rate_classes"
 
-    tax_rate_class_id: Optional[int] = Field(default=None, primary_key=True)
+    tax_rate_class_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     name: str = Field(max_length=200, default="")
     slug: str = Field(max_length=200, default="")
 
@@ -342,7 +344,7 @@ class WCProductDownloadDirectory(SQLModel, table=True):
     """WooCommerce product download directories (8jH_wc_product_download_directories)"""
     __tablename__ = "8jH_wc_product_download_directories"
 
-    url_id: Optional[int] = Field(default=None, primary_key=True)
+    url_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     url: str = Field(max_length=256, default="")
     enabled: bool = Field(default=False)
 
@@ -351,7 +353,7 @@ class WCRateLimit(SQLModel, table=True):
     """WooCommerce rate limits (8jH_wc_rate_limits)"""
     __tablename__ = "8jH_wc_rate_limits"
 
-    rate_limit_id: Optional[int] = Field(default=None, primary_key=True)
+    rate_limit_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     rate_limit_key: str = Field(max_length=200, default="")
     rate_limit_expiry: int = Field(default=0)
     rate_limit_remaining: int = Field(default=0)
@@ -361,16 +363,16 @@ class WCCategoryLookup(SQLModel, table=True):
     """WooCommerce category lookup (8jH_wc_category_lookup)"""
     __tablename__ = "8jH_wc_category_lookup"
 
-    category_tree_id: int = Field(primary_key=True)
-    category_id: int = Field(primary_key=True)
+    category_tree_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
+    category_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
 
 
 class WCOrderCouponLookup(SQLModel, table=True):
     """WooCommerce order coupon lookup (8jH_wc_order_coupon_lookup)"""
     __tablename__ = "8jH_wc_order_coupon_lookup"
 
-    order_id: int = Field(primary_key=True)
-    coupon_id: int = Field(primary_key=True)
+    order_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
+    coupon_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
     date_created: datetime = Field(default_factory=datetime.now)
     discount_amount: float = Field(default=0)
 
@@ -379,7 +381,7 @@ class WCOrderProductLookup(SQLModel, table=True):
     """WooCommerce order product lookup (8jH_wc_order_product_lookup)"""
     __tablename__ = "8jH_wc_order_product_lookup"
 
-    order_item_id: int = Field(primary_key=True)
+    order_item_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
     order_id: int = Field(default=0)
     product_id: int = Field(default=0)
     variation_id: int = Field(default=0)
@@ -398,7 +400,7 @@ class WCDownloadLog(SQLModel, table=True):
     """WooCommerce download log (8jH_wc_download_log)"""
     __tablename__ = "8jH_wc_download_log"
 
-    download_log_id: Optional[int] = Field(default=None, primary_key=True)
+    download_log_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     timestamp: datetime = Field(default_factory=datetime.now)
     permission_id: int = Field(default=0)
     user_id: Optional[int] = Field(default=None)
@@ -409,7 +411,7 @@ class WCLog(SQLModel, table=True):
     """WooCommerce logs (8jH_woocommerce_log)"""
     __tablename__ = "8jH_woocommerce_log"
 
-    log_id: Optional[int] = Field(default=None, primary_key=True)
+    log_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     timestamp: datetime = Field(default_factory=datetime.now)
     level: int = Field(default=0)
     source: str = Field(max_length=200, default="")
@@ -421,7 +423,7 @@ class WCAttributeTaxonomy(SQLModel, table=True):
     """WooCommerce attribute taxonomies (8jH_woocommerce_attribute_taxonomies)"""
     __tablename__ = "8jH_woocommerce_attribute_taxonomies"
 
-    attribute_id: Optional[int] = Field(default=None, primary_key=True)
+    attribute_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     attribute_name: str = Field(max_length=200, default="")
     attribute_label: Optional[str] = Field(default=None, max_length=200)
     attribute_type: str = Field(max_length=20, default="")

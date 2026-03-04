@@ -219,7 +219,7 @@ class AuthService:
 
         # Activate user
         await self.user_repo.set_status(user, 1)
-        await self.user_repo.set_activation_key(user, None)
+        await self.user_repo.set_activation_key(user, "")
 
         # Send welcome email via background task
         from app.service.email import send_welcome_email
@@ -338,7 +338,7 @@ class AuthService:
         # Hash new password
         hashed_password = hash_password(new_password)
         await self.user_repo.update_password(user, hashed_password)
-        await self.user_repo.set_activation_key(user, None)
+        await self.user_repo.set_activation_key(user, "")
 
         return user
 

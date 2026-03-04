@@ -2,7 +2,7 @@
 WooCommerce Cart and Checkout Schemas.
 Schemas for managing shopping cart and checkout process.
 """
-from typing import List, Optional
+from typing import List, Optional, Dict
 from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel, Field
@@ -45,6 +45,7 @@ class WCAddToCartRequest(BaseModel):
     product_id: int = Field(..., description="Product ID to add")
     variation_id: Optional[int] = Field(None, description="Variation ID for variable products")
     quantity: int = Field(1, ge=1, description="Quantity to add")
+    custom_fields: Optional[Dict[str, str]] = Field(None, description="Custom field values, e.g. {'Telegram Username': '@john'}")
 
 
 class WCUpdateCartItemRequest(BaseModel):
@@ -84,6 +85,7 @@ class WCCheckoutRequest(BaseModel):
     customer_note: Optional[str] = Field(None, description="Order notes from customer")
     shipping_method: Optional[str] = Field(None, description="Shipping method ID")
     coupon_codes: List[str] = Field(default_factory=list, description="Coupon codes to apply")
+    custom_fields: Optional[Dict[str, str]] = Field(None, description="Custom field values for order items, e.g. {'Telegram Username': '@john'}")
 
 
 class WCCheckoutResponse(BaseModel):

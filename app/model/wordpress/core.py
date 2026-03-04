@@ -7,13 +7,15 @@ Maps to tables: 8jH_users, 8jH_usermeta, 8jH_posts, 8jH_postmeta,
 from datetime import datetime
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from sqlalchemy.dialects.mysql import BIGINT
+
 
 
 class WPUser(SQLModel, table=True):
     """WordPress users table (8jH_users)"""
     __tablename__ = "8jH_users"
 
-    ID: Optional[int] = Field(default=None, primary_key=True)
+    ID: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True}, sa_type=BIGINT(unsigned=True))
     user_login: str = Field(max_length=60, default="", index=True)
     user_pass: str = Field(max_length=255, default="")
     user_nicename: str = Field(max_length=50, default="", index=True)
@@ -29,8 +31,8 @@ class WPUserMeta(SQLModel, table=True):
     """WordPress user meta table (8jH_usermeta)"""
     __tablename__ = "8jH_usermeta"
 
-    umeta_id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(default=0, foreign_key="8jH_users.ID", index=True)
+    umeta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
+    user_id: int = Field(default=0, foreign_key="8jH_users.ID", index=True, sa_type=BIGINT(unsigned=True))
     meta_key: Optional[str] = Field(default=None, max_length=255, index=True)
     meta_value: Optional[str] = Field(default=None)
 
@@ -39,8 +41,8 @@ class WPPost(SQLModel, table=True):
     """WordPress posts table (8jH_posts)"""
     __tablename__ = "8jH_posts"
 
-    ID: Optional[int] = Field(default=None, primary_key=True)
-    post_author: int = Field(default=0, foreign_key="8jH_users.ID")
+    ID: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
+    post_author: int = Field(default=0, foreign_key="8jH_users.ID", sa_type=BIGINT(unsigned=True))
     post_date: datetime = Field(default_factory=datetime.now)
     post_date_gmt: datetime = Field(default_factory=datetime.now)
     post_content: str = Field(default="")
@@ -68,7 +70,7 @@ class WPPostMeta(SQLModel, table=True):
     """WordPress post meta table (8jH_postmeta)"""
     __tablename__ = "8jH_postmeta"
 
-    meta_id: Optional[int] = Field(default=None, primary_key=True)
+    meta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     post_id: int = Field(default=0, foreign_key="8jH_posts.ID", index=True)
     meta_key: Optional[str] = Field(default=None, max_length=255, index=True)
     meta_value: Optional[str] = Field(default=None)
@@ -78,7 +80,7 @@ class WPComment(SQLModel, table=True):
     """WordPress comments table (8jH_comments)"""
     __tablename__ = "8jH_comments"
 
-    comment_ID: Optional[int] = Field(default=None, primary_key=True)
+    comment_ID: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     comment_post_ID: int = Field(default=0, foreign_key="8jH_posts.ID")
     comment_author: str = Field(default="")
     comment_author_email: str = Field(max_length=100, default="")
@@ -99,7 +101,7 @@ class WPCommentMeta(SQLModel, table=True):
     """WordPress comment meta table (8jH_commentmeta)"""
     __tablename__ = "8jH_commentmeta"
 
-    meta_id: Optional[int] = Field(default=None, primary_key=True)
+    meta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     comment_id: int = Field(default=0, foreign_key="8jH_comments.comment_ID")
     meta_key: Optional[str] = Field(default=None, max_length=255)
     meta_value: Optional[str] = Field(default=None)
@@ -109,7 +111,7 @@ class WPOption(SQLModel, table=True):
     """WordPress options table (8jH_options)"""
     __tablename__ = "8jH_options"
 
-    option_id: Optional[int] = Field(default=None, primary_key=True)
+    option_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     option_name: str = Field(max_length=191, default="", unique=True, index=True)
     option_value: str = Field(default="")
     autoload: str = Field(max_length=20, default="yes", index=True)
@@ -119,7 +121,7 @@ class WPTerm(SQLModel, table=True):
     """WordPress terms table (8jH_terms)"""
     __tablename__ = "8jH_terms"
 
-    term_id: Optional[int] = Field(default=None, primary_key=True)
+    term_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     name: str = Field(max_length=200, default="")
     slug: str = Field(max_length=200, default="")
     term_group: int = Field(default=0)
@@ -129,7 +131,7 @@ class WPTermMeta(SQLModel, table=True):
     """WordPress term meta table (8jH_termmeta)"""
     __tablename__ = "8jH_termmeta"
 
-    meta_id: Optional[int] = Field(default=None, primary_key=True)
+    meta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     term_id: int = Field(default=0, foreign_key="8jH_terms.term_id")
     meta_key: Optional[str] = Field(default=None, max_length=255)
     meta_value: Optional[str] = Field(default=None)
@@ -139,7 +141,7 @@ class WPTermTaxonomy(SQLModel, table=True):
     """WordPress term taxonomy table (8jH_term_taxonomy)"""
     __tablename__ = "8jH_term_taxonomy"
 
-    term_taxonomy_id: Optional[int] = Field(default=None, primary_key=True)
+    term_taxonomy_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     term_id: int = Field(default=0, foreign_key="8jH_terms.term_id")
     taxonomy: str = Field(max_length=32, default="")
     description: str = Field(default="")
@@ -160,7 +162,7 @@ class WPLink(SQLModel, table=True):
     """WordPress links table (8jH_links)"""
     __tablename__ = "8jH_links"
 
-    link_id: Optional[int] = Field(default=None, primary_key=True)
+    link_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     link_url: str = Field(max_length=255, default="")
     link_name: str = Field(max_length=255, default="")
     link_image: str = Field(max_length=255, default="")

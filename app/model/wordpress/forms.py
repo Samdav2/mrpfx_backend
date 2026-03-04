@@ -13,7 +13,7 @@ class WPFormsLog(SQLModel, table=True):
     """WPForms logs (8jH_wpforms_logs)"""
     __tablename__ = "8jH_wpforms_logs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     title: str = Field(max_length=255, default="")
     message: str = Field(default="")
     types: str = Field(max_length=255, default="")
@@ -27,7 +27,7 @@ class WPFormsPayment(SQLModel, table=True):
     """WPForms payments (8jH_wpforms_payments)"""
     __tablename__ = "8jH_wpforms_payments"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     form_id: int = Field(default=0)
     status: str = Field(max_length=10, default="")
     subtotal_amount: Decimal = Field(default=0)
@@ -52,7 +52,7 @@ class WPFormsPaymentMeta(SQLModel, table=True):
     """WPForms payment meta (8jH_wpforms_payment_meta)"""
     __tablename__ = "8jH_wpforms_payment_meta"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     payment_id: int = Field(default=0, foreign_key="8jH_wpforms_payments.id")
     meta_key: Optional[str] = Field(default=None, max_length=255)
     meta_value: Optional[str] = Field(default=None)
@@ -62,7 +62,7 @@ class WPFormsTaskMeta(SQLModel, table=True):
     """WPForms task meta (8jH_wpforms_tasks_meta)"""
     __tablename__ = "8jH_wpforms_tasks_meta"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     action: str = Field(max_length=255, default="")
     data: str = Field(default="")
     date: datetime = Field(default_factory=datetime.now)

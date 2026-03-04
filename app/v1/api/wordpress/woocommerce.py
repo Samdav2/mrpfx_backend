@@ -15,7 +15,8 @@ from app.schema.wordpress.woocommerce import (
     WCProductVariationCreate, WCProductVariationUpdate,
     WCProductCategoryRead, WCProductCategoryCreate,
     WCProductCategoryUpdate, WCProductTagRead,
-    WCOrderFull, WCCustomerRead, WCOrderCreate, WCOrderUpdate
+    WCOrderFull, WCCustomerRead, WCOrderCreate, WCOrderUpdate,
+    WCProductAddonField, WCProductAddonsCreate, WCProductAddonsRead
 )
 from app.service.email import send_order_confirmation_email, send_order_status_update_email
 from app.dependencies.auth import get_current_user
@@ -354,6 +355,46 @@ async def get_product_attributes(
     return await repo.get_product_attributes(product_id)
 
 
+# ============== Product Addons (Custom Input Fields) ==============
+
+@router.get("/products/{product_id}/addons", response_model=WCProductAddonsRead, tags=["WooCommerce Products"])
+async def get_product_addons(
+    product_id: int,
+    session: Session = Depends(get_session)
+):
+    """Get custom input fields for a product (e.g. Telegram Username)"""
+    repo = WCProductRepository(session)
+    addons = await repo.get_product_addons(product_id)
+    return WCProductAddonsRead(product_id=product_id, addons=addons)
+
+
+@router.put("/products/{product_id}/addons", response_model=WCProductAddonsRead, tags=["WooCommerce Products"])
+async def set_product_addons(
+    product_id: int,
+    addons_data: WCProductAddonsCreate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Set/replace custom input fields for a product (admin only)"""
+    repo = WCProductRepository(session)
+    await repo.set_product_addons(product_id, addons_data.addons)
+    return WCProductAddonsRead(product_id=product_id, addons=addons_data.addons)
+
+
+@router.delete("/products/{product_id}/addons", tags=["WooCommerce Products"])
+async def delete_product_addons(
+    product_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Remove all custom input fields from a product (admin only)"""
+    repo = WCProductRepository(session)
+    success = await repo.delete_product_addons(product_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="No addons found for this product")
+    return {"message": "Product addons removed successfully"}
+
+
 # ============== Product Categories ==============
 
 @router.get("/products/categories", response_model=List[WCProductCategoryRead])
@@ -559,7 +600,8 @@ async def checkout(
             shipping_address=shipping,
             payment_method=request.payment_method,
             payment_method_title=request.payment_method_title or request.payment_method,
-            customer_note=request.customer_note
+            customer_note=request.customer_note,
+            custom_fields=request.custom_fields
         )
         return WCCheckoutResponse(**result)
     except ValueError as e:

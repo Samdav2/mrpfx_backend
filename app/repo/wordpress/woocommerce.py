@@ -19,7 +19,8 @@ from app.schema.wordpress.woocommerce import (
     WCProductVariationCreate, WCProductVariationUpdate,
     WCProductCategoryCreate, WCProductCategoryUpdate,
     WCOrderFull, WCOrderAddress as WCOrderAddressSchema, WCOrderItemRead,
-    WCOrderCreate, WCOrderUpdate
+    WCOrderCreate, WCOrderUpdate,
+    WCProductAddonField, WCProductAddonsRead
 )
 
 
@@ -459,10 +460,14 @@ class WCProductRepository:
                 # Or sometimes comma-separated
                 return [int(i.strip()) for i in val.split(",") if i.strip()]
 
+        # Get custom addon fields
+        addons = await self.get_product_addons(product_id)
+
         return WCProductFullRead(
             **product.model_dump(),
             attributes=attributes,
             variations=variations,
+            addons=addons,
             cross_sell_ids=parse_ids(meta.get("_crosssell_ids")),
             upsell_ids=parse_ids(meta.get("_upsell_ids"))
         )
@@ -643,6 +648,10 @@ class WCProductRepository:
                 total_sales=0
             )
             self.session.add(product_meta)
+
+        # Store custom addon fields (e.g. Telegram Username input)
+        if data.addons:
+            await self.set_product_addons(product_id, data.addons)
 
         await self.session.commit()
         return await self.get_product(product_id)
@@ -890,6 +899,9 @@ class WCProductRepository:
 
         await self.session.commit()
 
+        # Sync min/max price range on parent product
+        await self._update_product_price_range(product_id)
+
         variations = await self.get_product_variations(product_id)
         return next((v for v in variations if v.id == var_id), None)
 
@@ -937,7 +949,24 @@ class WCProductRepository:
         for key, value in meta_updates.items():
             await self._set_product_meta(variation_id, key, value)
 
+        # Recalculate _price based on current sale/regular prices
+        if data.regular_price is not None or data.sale_price is not None:
+            meta_stmt = select(WPPostMeta).where(
+                WPPostMeta.post_id == variation_id,
+                WPPostMeta.meta_key.in_(["_regular_price", "_sale_price"])
+            )
+            price_result = await self.session.exec(meta_stmt)
+            price_meta = {m.meta_key: m.meta_value for m in price_result.all()}
+            sale = price_meta.get("_sale_price", "")
+            regular = price_meta.get("_regular_price", "0")
+            active_price = sale if sale and sale not in ("", "0") else regular
+            await self._set_product_meta(variation_id, "_price", active_price)
+
         await self.session.commit()
+
+        # Sync min/max price range on parent product
+        await self._update_product_price_range(post.post_parent)
+
         return next((v for v in await self.get_product_variations(post.post_parent) if v.id == variation_id), None)
 
     async def delete_variation(self, variation_id: int) -> bool:
@@ -951,6 +980,8 @@ class WCProductRepository:
         if not post:
             return False
 
+        parent_id = post.post_parent
+
         # Delete meta first
         meta_stmt = select(WPPostMeta).where(WPPostMeta.post_id == variation_id)
         meta_res = await self.session.exec(meta_stmt)
@@ -959,6 +990,11 @@ class WCProductRepository:
 
         await self.session.delete(post)
         await self.session.commit()
+
+        # Sync min/max price range on parent product
+        if parent_id:
+            await self._update_product_price_range(parent_id)
+
         return True
 
     async def get_product_meta(self, product_id: int) -> Optional[WCProductMeta]:
@@ -1177,6 +1213,133 @@ class WCProductRepository:
 
         await self.session.commit()
 
+    # ============== Product Addons (Custom Input Fields) ==============
+
+    async def get_product_addons(self, product_id: int) -> List[WCProductAddonField]:
+        """Get custom input fields (addons) for a product, e.g. Telegram Username."""
+        import phpserialize
+        import json
+
+        stmt = select(WPPostMeta).where(
+            WPPostMeta.post_id == product_id,
+            WPPostMeta.meta_key == "_product_addons"
+        )
+        result = await self.session.exec(stmt)
+        meta = result.first()
+        if not meta or not meta.meta_value:
+            return []
+
+        try:
+            # Try JSON first (our custom format)
+            data = json.loads(meta.meta_value)
+        except (json.JSONDecodeError, ValueError):
+            try:
+                # Fall back to PHP serialized (WordPress plugin format)
+                data = phpserialize.loads(meta.meta_value.encode(), decode_strings=True)
+                if isinstance(data, dict):
+                    data = list(data.values())
+            except Exception:
+                return []
+
+        if not isinstance(data, list):
+            return []
+
+        addons = []
+        for i, addon_data in enumerate(data):
+            if isinstance(addon_data, dict):
+                addons.append(WCProductAddonField(
+                    name=addon_data.get("name", addon_data.get("field_name", f"Field {i}")),
+                    type=addon_data.get("type", addon_data.get("field_type", "text")),
+                    required=bool(addon_data.get("required", False)),
+                    placeholder=addon_data.get("placeholder"),
+                    description=addon_data.get("description"),
+                    options=addon_data.get("options", []),
+                    position=int(addon_data.get("position", i)),
+                    max_length=int(addon_data.get("max_length")) if addon_data.get("max_length") else None
+                ))
+        return addons
+
+    async def set_product_addons(self, product_id: int, addons: List[WCProductAddonField]) -> bool:
+        """Set custom input fields for a product. Stores as JSON in _product_addons meta."""
+        import json
+
+        addon_list = [addon.model_dump() for addon in addons]
+        json_value = json.dumps(addon_list)
+
+        await self._set_product_meta(product_id, "_product_addons", json_value)
+
+        # Also set the flag that tells WooCommerce this product has addons
+        await self._set_product_meta(product_id, "_product_addons_exclude_global", "1")
+
+        return True
+
+    async def delete_product_addons(self, product_id: int) -> bool:
+        """Remove all custom input fields from a product."""
+        stmt = select(WPPostMeta).where(
+            WPPostMeta.post_id == product_id,
+            WPPostMeta.meta_key.in_(["_product_addons", "_product_addons_exclude_global"])
+        )
+        result = await self.session.exec(stmt)
+        metas = result.all()
+        if not metas:
+            return False
+
+        for meta in metas:
+            await self.session.delete(meta)
+
+        await self.session.commit()
+        return True
+
+    # ============== Variation Price Range Sync ==============
+
+    async def _update_product_price_range(self, product_id: int) -> None:
+        """Recalculate and update min/max prices on the parent product's meta lookup
+        based on all its variations. This keeps the price range in sync just like
+        WordPress does when you save a variable product."""
+        variations = await self.get_product_variations(product_id)
+
+        if not variations:
+            return
+
+        prices = []
+        for v in variations:
+            if v.price is not None:
+                prices.append(v.price)
+
+        if not prices:
+            return
+
+        min_price = min(prices)
+        max_price = max(prices)
+
+        # Update product meta lookup
+        lookup_stmt = select(WCProductMetaLookup).where(
+            WCProductMetaLookup.product_id == product_id
+        )
+        lookup_result = await self.session.exec(lookup_stmt)
+        lookup = lookup_result.first()
+
+        if lookup:
+            lookup.min_price = min_price
+            lookup.max_price = max_price
+            if min_price != max_price:
+                lookup.onsale = any(v.sale_price and v.sale_price > 0 for v in variations)
+            self.session.add(lookup)
+        else:
+            new_lookup = WCProductMetaLookup(
+                product_id=product_id,
+                min_price=min_price,
+                max_price=max_price,
+                onsale=any(v.sale_price and v.sale_price > 0 for v in variations),
+                stock_status="instock"
+            )
+            self.session.add(new_lookup)
+
+        # Also update the parent post meta _price to the min price
+        await self._set_product_meta(product_id, "_price", str(min_price))
+
+        await self.session.commit()
+
 
 
 
@@ -1261,15 +1424,44 @@ class WCCartRepository:
             product = await self._product_repo.get_product(item.get("product_id"))
             if product:
                 quantity = item.get("quantity", 1)
+                variation_id = item.get("variation_id")
+
+                # If a variation is specified, use its price instead of the parent product price
                 price = float(product.price or 0)
-                line_total = price * quantity
+                variation_name = None
+                if variation_id:
+                    variation_meta_stmt = select(WPPostMeta).where(
+                        WPPostMeta.post_id == variation_id,
+                        WPPostMeta.meta_key == "_price"
+                    )
+                    var_result = await self.session.exec(variation_meta_stmt)
+                    var_price_meta = var_result.first()
+                    if var_price_meta and var_price_meta.meta_value:
+                        try:
+                            price = float(var_price_meta.meta_value)
+                        except (ValueError, TypeError):
+                            pass
+
+                    # Also fetch variation attributes for display name
+                    attr_stmt = select(WPPostMeta).where(
+                        WPPostMeta.post_id == variation_id,
+                        WPPostMeta.meta_key.like("attribute_%")
+                    )
+                    attr_result = await self.session.exec(attr_stmt)
+                    attrs = attr_result.all()
+                    if attrs:
+                        attr_values = [a.meta_value for a in attrs if a.meta_value]
+                        if attr_values:
+                            variation_name = f"{product.name} - {', '.join(attr_values)}"
+
+                line_total = round(price * quantity, 2)
                 subtotal += line_total
 
                 items.append({
                     "product_id": product.id,
-                    "variation_id": item.get("variation_id"),
+                    "variation_id": variation_id,
                     "quantity": quantity,
-                    "product_name": product.name,
+                    "product_name": variation_name or product.name,
                     "product_price": price,
                     "line_total": line_total,
                     "product_image": None,
@@ -1280,11 +1472,11 @@ class WCCartRepository:
         return {
             "user_id": user_id,
             "items": items,
-            "subtotal": subtotal,
+            "subtotal": round(subtotal, 2),
             "discount_total": cart_data.get("discount_total", 0),
             "shipping_total": cart_data.get("shipping_total", 0),
             "tax_total": cart_data.get("tax_total", 0),
-            "total": subtotal - cart_data.get("discount_total", 0) + cart_data.get("shipping_total", 0) + cart_data.get("tax_total", 0),
+            "total": round(subtotal - cart_data.get("discount_total", 0) + cart_data.get("shipping_total", 0) + cart_data.get("tax_total", 0), 2),
             "item_count": sum(item.get("quantity", 1) for item in cart_data.get("items", [])),
             "coupon_codes": cart_data.get("coupon_codes", [])
         }
@@ -1457,7 +1649,8 @@ class WCCartRepository:
         shipping_address: Optional[Dict[str, Any]] = None,
         payment_method: str = "manual",
         payment_method_title: str = "Manual Payment",
-        customer_note: Optional[str] = None
+        customer_note: Optional[str] = None,
+        custom_fields: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """Create order from cart"""
         import uuid
@@ -1531,6 +1724,16 @@ class WCCartRepository:
                     meta_value=meta_value
                 )
                 self.session.add(meta)
+
+            # Save custom fields (e.g. Telegram Username) as order item meta
+            if custom_fields:
+                for field_name, field_value in custom_fields.items():
+                    cf_meta = WCOrderItemMeta(
+                        order_item_id=order_item.order_item_id,
+                        meta_key=field_name,
+                        meta_value=field_value
+                    )
+                    self.session.add(cf_meta)
 
         await self.session.commit()
         await self.session.refresh(order)

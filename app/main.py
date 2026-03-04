@@ -39,8 +39,8 @@ async def lifespan(app: FastAPI):
     # Create uploads directory if it doesn't exist
     os.makedirs("wp-content/uploads", exist_ok=True)
 
-    await ini_db()
-    logger.info("Database tables created/verified")
+    # await ini_db()
+    # logger.info("Database tables created/verified")
     yield
     # Shutdown
     logger.info("Shutting down %s...", settings.APP_NAME)

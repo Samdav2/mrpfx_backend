@@ -11,6 +11,7 @@ sqlmodel>=0.0.14
 sqlalchemy[asyncio]>=2.0.25
 asyncpg>=0.29.0  # PostgreSQL
 aiosqlite>=0.20.0  # SQLite (default for development)
+aiomysql>=0.2.0  # MySQL (WordPress database)
 
 # Authentication & Security
 python-jose[cryptography]>=3.3.0

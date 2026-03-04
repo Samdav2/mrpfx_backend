@@ -5,13 +5,15 @@ Maps to tables with prefix 8jH_e_*
 from datetime import datetime
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from sqlalchemy.dialects.mysql import BIGINT
+
 
 
 class ElementorEvent(SQLModel, table=True):
     """Elementor events (8jH_e_events)"""
     __tablename__ = "8jH_e_events"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     event_data: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.now)
 
@@ -20,7 +22,7 @@ class ElementorNote(SQLModel, table=True):
     """Elementor notes/comments (8jH_e_notes)"""
     __tablename__ = "8jH_e_notes"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     route_url: Optional[str] = Field(default=None)
     route_title: Optional[str] = Field(default=None, max_length=255)
     route_post_id: Optional[int] = Field(default=None)
@@ -43,10 +45,10 @@ class ElementorNoteUserRelation(SQLModel, table=True):
     """Elementor note-user relations (8jH_e_notes_users_relations)"""
     __tablename__ = "8jH_e_notes_users_relations"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     type: str = Field(max_length=60, default="")
     note_id: int = Field(default=0, foreign_key="8jH_e_notes.id")
-    user_id: int = Field(default=0, foreign_key="8jH_users.ID")
+    user_id: int = Field(default=0, foreign_key="8jH_users.ID", sa_type=BIGINT(unsigned=True))
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
@@ -55,7 +57,7 @@ class ElementorSubmission(SQLModel, table=True):
     """Elementor form submissions (8jH_e_submissions)"""
     __tablename__ = "8jH_e_submissions"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     type: Optional[str] = Field(default=None, max_length=60)
     hash_id: str = Field(max_length=60, default="")
     main_meta_id: int = Field(default=0)
@@ -83,7 +85,7 @@ class ElementorSubmissionActionLog(SQLModel, table=True):
     """Elementor submission action logs (8jH_e_submissions_actions_log)"""
     __tablename__ = "8jH_e_submissions_actions_log"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     submission_id: int = Field(default=0, foreign_key="8jH_e_submissions.id")
     action_name: str = Field(max_length=60, default="")
     action_label: Optional[str] = Field(default=None, max_length=60)
@@ -99,7 +101,7 @@ class ElementorSubmissionValue(SQLModel, table=True):
     """Elementor submission values (8jH_e_submissions_values)"""
     __tablename__ = "8jH_e_submissions_values"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     submission_id: int = Field(default=0, foreign_key="8jH_e_submissions.id")
     key: Optional[str] = Field(default=None, max_length=60)
     value: Optional[str] = Field(default=None)

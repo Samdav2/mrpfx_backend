@@ -6,6 +6,7 @@ Maps to tables with prefixes 8jH_wf*, 8jH_itsec_*, 8jH_bv_*, 8jH_loginizer_*
 from datetime import datetime
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from sqlalchemy import Column, VARBINARY
 
 
 # =============================================================================
@@ -25,7 +26,7 @@ class WFBlocks(SQLModel, table=True):
     """Wordfence IP blocks (8jH_wfblocks7)"""
     __tablename__ = "8jH_wfblocks7"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     type: int = Field(default=0)
     IP: bytes = Field(default=b'\x00' * 16)
     blockedTime: int = Field(default=0)
@@ -40,7 +41,7 @@ class WFHits(SQLModel, table=True):
     """Wordfence traffic hits (8jH_wfhits)"""
     __tablename__ = "8jH_wfhits"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     attackLogTime: float = Field(default=0)
     ctime: float = Field(default=0)
     IP: Optional[bytes] = Field(default=None)
@@ -61,7 +62,7 @@ class WFLogins(SQLModel, table=True):
     """Wordfence login attempts (8jH_wflogins)"""
     __tablename__ = "8jH_wflogins"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     hitID: Optional[int] = Field(default=None)
     ctime: float = Field(default=0)
     fail: int = Field(default=0)
@@ -76,7 +77,7 @@ class WFIssues(SQLModel, table=True):
     """Wordfence security issues (8jH_wfissues)"""
     __tablename__ = "8jH_wfissues"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     time: int = Field(default=0)
     lastUpdated: int = Field(default=0)
     status: str = Field(max_length=10, default="")
@@ -93,7 +94,7 @@ class WFStatus(SQLModel, table=True):
     """Wordfence status messages (8jH_wfstatus)"""
     __tablename__ = "8jH_wfstatus"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     ctime: float = Field(default=0)
     level: int = Field(default=0)
     type: str = Field(max_length=5, default="")
@@ -117,7 +118,7 @@ class WFSecurityEvents(SQLModel, table=True):
     """Wordfence security events (8jH_wfsecurityevents)"""
     __tablename__ = "8jH_wfsecurityevents"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     type: str = Field(max_length=255, default="")
     data: str = Field(default="")
     event_time: float = Field(default=0)
@@ -129,7 +130,7 @@ class WFLockouts(SQLModel, table=True):
     """Wordfence lockouts (8jH_wflocs)"""
     __tablename__ = "8jH_wflocs"
 
-    IP: bytes = Field(primary_key=True, default=b'\x00' * 16)
+    IP: bytes = Field(sa_column=Column(VARBINARY(16), primary_key=True))
     ctime: int = Field(default=0)
     failed: int = Field(default=0)
     city: Optional[str] = Field(default="", max_length=255)
@@ -148,7 +149,7 @@ class ITSecBan(SQLModel, table=True):
     """iThemes Security bans (8jH_itsec_bans)"""
     __tablename__ = "8jH_itsec_bans"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     host: str = Field(max_length=64, default="")
     type: str = Field(max_length=20, default="ip")
     created_at: datetime = Field(default_factory=datetime.now)
@@ -161,7 +162,7 @@ class ITSecLockout(SQLModel, table=True):
     """iThemes Security lockouts (8jH_itsec_lockouts)"""
     __tablename__ = "8jH_itsec_lockouts"
 
-    lockout_id: Optional[int] = Field(default=None, primary_key=True)
+    lockout_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     lockout_type: str = Field(max_length=25, default="")
     lockout_start: datetime = Field(default_factory=datetime.now)
     lockout_start_gmt: datetime = Field(default_factory=datetime.now)
@@ -178,7 +179,7 @@ class ITSecLog(SQLModel, table=True):
     """iThemes Security logs (8jH_itsec_logs)"""
     __tablename__ = "8jH_itsec_logs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     parent_id: int = Field(default=0)
     module: str = Field(max_length=50, default="")
     code: str = Field(max_length=100, default="")
@@ -198,7 +199,7 @@ class ITSecFingerprint(SQLModel, table=True):
     """iThemes Security fingerprints (8jH_itsec_fingerprints)"""
     __tablename__ = "8jH_itsec_fingerprints"
 
-    fingerprint_id: Optional[int] = Field(default=None, primary_key=True)
+    fingerprint_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     fingerprint_user: int = Field(default=0)
     fingerprint_hash: str = Field(max_length=32, default="")
     fingerprint_created_at: datetime = Field(default_factory=datetime.now)
@@ -230,7 +231,7 @@ class ITSecDashboardEvent(SQLModel, table=True):
     """iThemes Security dashboard events (8jH_itsec_dashboard_events)"""
     __tablename__ = "8jH_itsec_dashboard_events"
 
-    event_id: Optional[int] = Field(default=None, primary_key=True)
+    event_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     event_slug: str = Field(max_length=128, default="")
     event_time: datetime = Field(default_factory=datetime.now)
     event_count: int = Field(default=1)
@@ -241,7 +242,7 @@ class ITSecFirewallRule(SQLModel, table=True):
     """iThemes Security firewall rules (8jH_itsec_firewall_rules)"""
     __tablename__ = "8jH_itsec_firewall_rules"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     provider: str = Field(max_length=20, default="")
     provider_ref: str = Field(max_length=128, default="")
     name: str = Field(max_length=255, default="")
@@ -259,7 +260,7 @@ class BVActivityStore(SQLModel, table=True):
     """BlogVault activities (8jH_bv_activities_store)"""
     __tablename__ = "8jH_bv_activities_store"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     site_id: int = Field(default=0)
     user_id: Optional[int] = Field(default=0)
     username: Optional[str] = Field(default=None)
@@ -274,7 +275,7 @@ class BVFWRequest(SQLModel, table=True):
     """BlogVault firewall requests (8jH_bv_fw_requests)"""
     __tablename__ = "8jH_bv_fw_requests"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     ip: str = Field(max_length=50, default="")
     status: int = Field(default=0)
     time: int = Field(default=0)
@@ -296,7 +297,7 @@ class BVIPStore(SQLModel, table=True):
     """BlogVault IP store (8jH_bv_ip_store)"""
     __tablename__ = "8jH_bv_ip_store"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     start_ip_range: bytes = Field(default=b'')
     end_ip_range: bytes = Field(default=b'')
     is_fw: int = Field(default=0)
@@ -309,7 +310,7 @@ class BVLPRequest(SQLModel, table=True):
     """BlogVault login protection requests (8jH_bv_lp_requests)"""
     __tablename__ = "8jH_bv_lp_requests"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     ip: str = Field(max_length=50, default="")
     status: int = Field(default=0)
     username: str = Field(max_length=50, default="")

@@ -13,7 +13,7 @@ class SWPMMember(SQLModel, table=True):
     """SWPM members table (8jH_swpm_members_tbl)"""
     __tablename__ = "8jH_swpm_members_tbl"
 
-    member_id: Optional[int] = Field(default=None, primary_key=True)
+    member_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     user_name: str = Field(max_length=255, default="")
     first_name: Optional[str] = Field(default="", max_length=64)
     last_name: Optional[str] = Field(default="", max_length=64)
@@ -50,7 +50,7 @@ class SWPMMembership(SQLModel, table=True):
     """SWPM membership levels table (8jH_swpm_membership_tbl)"""
     __tablename__ = "8jH_swpm_membership_tbl"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     alias: str = Field(max_length=127, default="")
     role: str = Field(max_length=255, default="subscriber")
     permissions: int = Field(default=0)
@@ -74,7 +74,7 @@ class SWPMMembershipMeta(SQLModel, table=True):
     """SWPM membership meta table (8jH_swpm_membership_meta_tbl)"""
     __tablename__ = "8jH_swpm_membership_meta_tbl"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     level_id: int = Field(foreign_key="8jH_swpm_membership_tbl.id")
     meta_key: str = Field(max_length=255, default="")
     meta_label: Optional[str] = Field(default=None, max_length=255)
@@ -88,7 +88,7 @@ class SWPMPayment(SQLModel, table=True):
     """SWPM payments table (8jH_swpm_payments_tbl)"""
     __tablename__ = "8jH_swpm_payments_tbl"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     email: Optional[str] = Field(default=None, max_length=255)
     first_name: Optional[str] = Field(default="", max_length=64)
     last_name: Optional[str] = Field(default="", max_length=64)

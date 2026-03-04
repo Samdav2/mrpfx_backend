@@ -14,7 +14,7 @@ class YoastIndexable(SQLModel, table=True):
     """Yoast SEO indexable (8jH_yoast_indexable)"""
     __tablename__ = "8jH_yoast_indexable"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     permalink: Optional[str] = Field(default=None)
     permalink_hash: Optional[str] = Field(default=None, max_length=40)
     object_id: Optional[int] = Field(default=None)
@@ -41,7 +41,7 @@ class YoastSEOLink(SQLModel, table=True):
     """Yoast SEO links (8jH_yoast_seo_links)"""
     __tablename__ = "8jH_yoast_seo_links"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     url: Optional[str] = Field(default=None, max_length=255)
     post_id: Optional[int] = Field(default=None)
     target_post_id: Optional[int] = Field(default=None)
@@ -56,7 +56,7 @@ class HustleModule(SQLModel, table=True):
     """Hustle modules (8jH_hustle_modules)"""
     __tablename__ = "8jH_hustle_modules"
 
-    module_id: Optional[int] = Field(default=None, primary_key=True)
+    module_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     blog_id: int = Field(default=0)
     module_name: str = Field(max_length=255, default="")
     module_type: str = Field(max_length=100, default="")
@@ -68,7 +68,7 @@ class HustleModuleMeta(SQLModel, table=True):
     """Hustle module meta (8jH_hustle_modules_meta)"""
     __tablename__ = "8jH_hustle_modules_meta"
 
-    meta_id: Optional[int] = Field(default=None, primary_key=True)
+    meta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     module_id: int = Field(default=0, foreign_key="8jH_hustle_modules.module_id")
     meta_key: Optional[str] = Field(default=None, max_length=191)
     meta_value: Optional[str] = Field(default=None)
@@ -78,7 +78,7 @@ class HustleEntry(SQLModel, table=True):
     """Hustle entries (8jH_hustle_entries)"""
     __tablename__ = "8jH_hustle_entries"
 
-    entry_id: Optional[int] = Field(default=None, primary_key=True)
+    entry_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     entry_type: str = Field(max_length=191, default="")
     module_id: int = Field(foreign_key="8jH_hustle_modules.module_id")
     date_created: datetime = Field(default_factory=datetime.now)
@@ -88,7 +88,7 @@ class HustleEntryMeta(SQLModel, table=True):
     """Hustle entry meta (8jH_hustle_entries_meta)"""
     __tablename__ = "8jH_hustle_entries_meta"
 
-    meta_id: Optional[int] = Field(default=None, primary_key=True)
+    meta_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     entry_id: int = Field(foreign_key="8jH_hustle_entries.entry_id")
     meta_key: Optional[str] = Field(default=None, max_length=191)
     meta_value: Optional[str] = Field(default=None)
@@ -100,7 +100,7 @@ class HustleTracking(SQLModel, table=True):
     """Hustle tracking (8jH_hustle_tracking)"""
     __tablename__ = "8jH_hustle_tracking"
 
-    tracking_id: Optional[int] = Field(default=None, primary_key=True)
+    tracking_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     module_id: int = Field(foreign_key="8jH_hustle_modules.module_id")
     page_id: int = Field(default=0)
     module_type: str = Field(max_length=100, default="")
@@ -117,7 +117,7 @@ class ActionSchedulerAction(SQLModel, table=True):
     """Action Scheduler actions (8jH_actionscheduler_actions)"""
     __tablename__ = "8jH_actionscheduler_actions"
 
-    action_id: Optional[int] = Field(default=None, primary_key=True)
+    action_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     hook: str = Field(max_length=191, default="")
     status: str = Field(max_length=20, default="")
     scheduled_date_gmt: Optional[datetime] = Field(default=None)
@@ -137,7 +137,7 @@ class ActionSchedulerGroup(SQLModel, table=True):
     """Action Scheduler groups (8jH_actionscheduler_groups)"""
     __tablename__ = "8jH_actionscheduler_groups"
 
-    group_id: Optional[int] = Field(default=None, primary_key=True)
+    group_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     slug: str = Field(max_length=255, default="")
 
 
@@ -145,7 +145,7 @@ class ActionSchedulerLog(SQLModel, table=True):
     """Action Scheduler logs (8jH_actionscheduler_logs)"""
     __tablename__ = "8jH_actionscheduler_logs"
 
-    log_id: Optional[int] = Field(default=None, primary_key=True)
+    log_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     action_id: int = Field(foreign_key="8jH_actionscheduler_actions.action_id")
     message: str = Field(default="")
     log_date_gmt: Optional[datetime] = Field(default=None)
@@ -158,7 +158,7 @@ class WPFormsPayment(SQLModel, table=True):
     """WPForms payments (8jH_wpforms_payments)"""
     __tablename__ = "8jH_wpforms_payments"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     form_id: int = Field(default=0)
     status: str = Field(max_length=10, default="")
     subtotal_amount: Decimal = Field(default=Decimal("0.00"))
@@ -185,7 +185,7 @@ class Redirection404(SQLModel, table=True):
     """Redirection 404 logs (8jH_redirection_404)"""
     __tablename__ = "8jH_redirection_404"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     created: datetime = Field(default_factory=datetime.now)
     url: str = Field(default="")
     domain: Optional[str] = Field(default=None, max_length=255)
@@ -201,7 +201,7 @@ class RedirectionItem(SQLModel, table=True):
     """Redirection items (8jH_redirection_items)"""
     __tablename__ = "8jH_redirection_items"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     url: str = Field(default="")
     match_url: Optional[str] = Field(default=None)
     match_data: Optional[str] = Field(default=None)
@@ -222,7 +222,7 @@ class RedirectionGroup(SQLModel, table=True):
     """Redirection groups (8jH_redirection_groups)"""
     __tablename__ = "8jH_redirection_groups"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     name: str = Field(max_length=50, default="")
     tracking: int = Field(default=1)
     module_id: int = Field(default=0)
@@ -236,7 +236,7 @@ class ElementorSubmission(SQLModel, table=True):
     """Elementor form submissions (8jH_e_submissions)"""
     __tablename__ = "8jH_e_submissions"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     type: Optional[str] = Field(default=None, max_length=60)
     hash_id: str = Field(max_length=60, default="")
     main_meta_id: int = Field(default=0)
@@ -264,7 +264,7 @@ class ElementorSubmissionValue(SQLModel, table=True):
     """Elementor submission values (8jH_e_submissions_values)"""
     __tablename__ = "8jH_e_submissions_values"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     submission_id: int = Field(default=0, foreign_key="8jH_e_submissions.id")
     key: Optional[str] = Field(default=None, max_length=60)
     value: Optional[str] = Field(default=None)
@@ -274,7 +274,7 @@ class WPFormsLog(SQLModel, table=True):
     """WPForms logs (8jH_wpforms_logs)"""
     __tablename__ = "8jH_wpforms_logs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     title: str = Field(max_length=255, default="")
     message: str = Field(default="")
     types: str = Field(max_length=255, default="")
@@ -288,7 +288,7 @@ class WPFormsPaymentMeta(SQLModel, table=True):
     """WPForms payment meta (8jH_wpforms_payment_meta)"""
     __tablename__ = "8jH_wpforms_payment_meta"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     payment_id: int = Field(default=0)
     meta_key: Optional[str] = Field(default=None, max_length=255)
     meta_value: Optional[str] = Field(default=None)
@@ -298,7 +298,7 @@ class WPFormsTaskMeta(SQLModel, table=True):
     """WPForms task meta (8jH_wpforms_tasks_meta)"""
     __tablename__ = "8jH_wpforms_tasks_meta"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     action: str = Field(max_length=255, default="")
     data: str = Field(default="")
     date: datetime = Field(default_factory=datetime.now)
@@ -310,7 +310,7 @@ class WFBlock(SQLModel, table=True):
     """Wordfence blocks (8jH_wfblocks7)"""
     __tablename__ = "8jH_wfblocks7"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     type: int = Field(default=0)
     IP: bytes = Field(default=b"")
     blockedTime: int = Field(default=0)
@@ -334,7 +334,7 @@ class WFHit(SQLModel, table=True):
     """Wordfence hits (8jH_wfhits)"""
     __tablename__ = "8jH_wfhits"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     attackLogTime: float = Field(default=0.0)
     ctime: float = Field(default=0.0)
     IP: Optional[bytes] = Field(default=None)
@@ -355,7 +355,7 @@ class WFLogin(SQLModel, table=True):
     """Wordfence logins (8jH_wflogins)"""
     __tablename__ = "8jH_wflogins"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     hitID: Optional[int] = Field(default=None)
     ctime: float = Field(default=0.0)
     fail: int = Field(default=0)
@@ -370,7 +370,7 @@ class WFStatus(SQLModel, table=True):
     """Wordfence status (8jH_wfstatus)"""
     __tablename__ = "8jH_wfstatus"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     ctime: float = Field(default=0.0)
     level: int = Field(default=0)
     type: str = Field(max_length=5, default="")
@@ -383,7 +383,7 @@ class ITSecLog(SQLModel, table=True):
     """iThemes Security logs (8jH_itsec_logs)"""
     __tablename__ = "8jH_itsec_logs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     parent_id: int = Field(default=0)
     module: str = Field(max_length=50, default="")
     code: str = Field(max_length=100, default="")
@@ -403,7 +403,7 @@ class ITSecLockout(SQLModel, table=True):
     """iThemes Security lockouts (8jH_itsec_lockouts)"""
     __tablename__ = "8jH_itsec_lockouts"
 
-    lockout_id: Optional[int] = Field(default=None, primary_key=True)
+    lockout_id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     lockout_type: str = Field(max_length=25, default="")
     lockout_start: datetime = Field(default_factory=datetime.now)
     lockout_start_gmt: datetime = Field(default_factory=datetime.now)
@@ -420,7 +420,7 @@ class ITSecBan(SQLModel, table=True):
     """iThemes Security bans (8jH_itsec_bans)"""
     __tablename__ = "8jH_itsec_bans"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     host: str = Field(max_length=64, default="")
     type: str = Field(max_length=20, default="ip")
     created_at: datetime = Field(default_factory=datetime.now)

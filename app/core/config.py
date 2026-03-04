@@ -22,11 +22,22 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = "postgres"
     DB_NAME: str = "mrpfx"
 
+    # WordPress MySQL settings
+    WP_DB_HOST: str = "localhost"
+    WP_DB_PORT: int = 3306
+    WP_DB_USER: str = "root"
+    WP_DB_PASSWORD: str = ""
+    WP_DB_NAME: str = "wordpress"
+
     @property
     def DATABASE_URL(self) -> str:
         if self.USE_SQLITE:
             return f"sqlite+aiosqlite:///{self.SQLITE_PATH}"
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    @property
+    def WP_DATABASE_URL(self) -> str:
+        return f"mysql+aiomysql://{self.WP_DB_USER}:{self.WP_DB_PASSWORD}@{self.WP_DB_HOST}:{self.WP_DB_PORT}/{self.WP_DB_NAME}?charset=utf8mb4"
 
     # JWT Settings
     JWT_SECRET_KEY: str = "mrpfx_secret_key_change_me_in_production"

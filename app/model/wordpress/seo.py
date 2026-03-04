@@ -16,7 +16,7 @@ class YoastIndexable(SQLModel, table=True):
     """Yoast SEO indexables (8jH_yoast_indexable)"""
     __tablename__ = "8jH_yoast_indexable"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     permalink: Optional[str] = Field(default=None)
     permalink_hash: Optional[str] = Field(default=None, max_length=40)
     object_id: Optional[int] = Field(default=None)
@@ -74,8 +74,8 @@ class YoastIndexableHierarchy(SQLModel, table=True):
     """Yoast SEO indexable hierarchy (8jH_yoast_indexable_hierarchy)"""
     __tablename__ = "8jH_yoast_indexable_hierarchy"
 
-    indexable_id: int = Field(primary_key=True, default=0)
-    ancestor_id: int = Field(primary_key=True, default=0)
+    indexable_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True}, default=0)
+    ancestor_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True}, default=0)
     depth: Optional[int] = Field(default=None)
     blog_id: int = Field(default=1)
 
@@ -84,7 +84,7 @@ class YoastMigration(SQLModel, table=True):
     """Yoast SEO migrations (8jH_yoast_migrations)"""
     __tablename__ = "8jH_yoast_migrations"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     version: Optional[str] = Field(default=None, max_length=191)
 
 
@@ -92,7 +92,7 @@ class YoastPrimaryTerm(SQLModel, table=True):
     """Yoast SEO primary terms (8jH_yoast_primary_term)"""
     __tablename__ = "8jH_yoast_primary_term"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     post_id: Optional[int] = Field(default=None)
     term_id: Optional[int] = Field(default=None)
     taxonomy: str = Field(max_length=32, default="")
@@ -105,7 +105,7 @@ class YoastSEOLink(SQLModel, table=True):
     """Yoast SEO links (8jH_yoast_seo_links)"""
     __tablename__ = "8jH_yoast_seo_links"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     url: Optional[str] = Field(default=None, max_length=255)
     post_id: Optional[int] = Field(default=None)
     target_post_id: Optional[int] = Field(default=None)
@@ -127,7 +127,7 @@ class RedirectionGroup(SQLModel, table=True):
     """Redirection groups (8jH_redirection_groups)"""
     __tablename__ = "8jH_redirection_groups"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     name: str = Field(max_length=50, default="")
     tracking: int = Field(default=1)
     module_id: int = Field(default=0)
@@ -139,7 +139,7 @@ class RedirectionItem(SQLModel, table=True):
     """Redirection items (8jH_redirection_items)"""
     __tablename__ = "8jH_redirection_items"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     url: str = Field(default="")
     match_url: Optional[str] = Field(default=None, max_length=2000)
     match_data: Optional[str] = Field(default=None)
@@ -160,7 +160,7 @@ class RedirectionLog(SQLModel, table=True):
     """Redirection logs (8jH_redirection_logs)"""
     __tablename__ = "8jH_redirection_logs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     created: datetime = Field(default_factory=datetime.now)
     url: str = Field(default="")
     domain: Optional[str] = Field(default=None, max_length=255)
@@ -179,7 +179,7 @@ class Redirection404(SQLModel, table=True):
     """Redirection 404 errors (8jH_redirection_404)"""
     __tablename__ = "8jH_redirection_404"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
     created: datetime = Field(default_factory=datetime.now)
     url: str = Field(default="")
     domain: Optional[str] = Field(default=None, max_length=255)

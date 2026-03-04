@@ -1,7 +1,7 @@
 """
 WooCommerce Pydantic Schemas for API responses and requests.
 """
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 from decimal import Decimal
 from pydantic import BaseModel, Field
@@ -53,6 +53,29 @@ class WCProductDimensions(BaseModel):
     length: Optional[str] = Field(None, description="Length")
     width: Optional[str] = Field(None, description="Width")
     height: Optional[str] = Field(None, description="Height")
+
+
+class WCProductAddonField(BaseModel):
+    """A single custom input field for a product (e.g. Telegram Username)"""
+    name: str = Field(..., description="Field name/label, e.g. 'Telegram Username'")
+    type: str = Field("text", description="Field type: text, textarea, select, checkbox, radio, number, email")
+    required: bool = Field(False, description="Whether the field is required")
+    placeholder: Optional[str] = Field(None, description="Placeholder text for input fields")
+    description: Optional[str] = Field(None, description="Help text shown below the field")
+    options: List[str] = Field(default_factory=list, description="Options for select/radio/checkbox fields")
+    position: int = Field(0, description="Display order position")
+    max_length: Optional[int] = Field(None, description="Max character length for text fields")
+
+
+class WCProductAddonsCreate(BaseModel):
+    """Request to set custom input fields on a product"""
+    addons: List[WCProductAddonField] = Field(..., description="List of custom input fields")
+
+
+class WCProductAddonsRead(BaseModel):
+    """Response with product custom input fields"""
+    product_id: int
+    addons: List[WCProductAddonField] = Field(default_factory=list)
 
 
 class WCProductVariationRead(BaseModel):
@@ -157,6 +180,7 @@ class WCProductCreate(WCProductBase):
     tags: Optional[List[int]] = Field(None, description="Tag term IDs to assign")
     attributes: Optional[List[dict]] = Field(None, description="Product attributes")
     dimensions: Optional[WCProductDimensions] = None
+    addons: Optional[List[WCProductAddonField]] = Field(None, description="Custom input fields (e.g. Telegram Username)")
 
 
 class WCProductUpdate(BaseModel):
@@ -207,6 +231,7 @@ class WCProductFullRead(WCProductRead):
     """Extended product with attributes, variations, and related products"""
     attributes: List[WCProductAttributeRead] = Field(default_factory=list)
     variations: List[WCProductVariationRead] = Field(default_factory=list)
+    addons: List[WCProductAddonField] = Field(default_factory=list, description="Custom input fields")
     related_ids: List[int] = Field(default_factory=list, description="Related product IDs")
     upsell_ids: List[int] = Field(default_factory=list, description="Upsell product IDs")
     cross_sell_ids: List[int] = Field(default_factory=list, description="Cross-sell product IDs")
