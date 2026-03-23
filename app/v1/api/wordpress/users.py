@@ -5,13 +5,14 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.db.session import get_session
 from app.repo.wordpress.user import WPUserRepository
 from app.schema.wordpress.user import WPUserRead, WPUserCreate, WPUserUpdate
+from app.dependencies.auth import get_current_user, get_current_admin
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_admin)])
 
-@router.get("/", response_model=List[WPUserRead])
+@router.get("", response_model=List[WPUserRead])
 async def get_users(
     page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
+    per_page: int = Query(10, ge=1),
     session: AsyncSession = Depends(get_session)
 ):
     repo = WPUserRepository(session)
@@ -29,7 +30,7 @@ async def get_user(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@router.post("/", response_model=WPUserRead)
+@router.post("", response_model=WPUserRead)
 async def create_user(
     user_data: WPUserCreate,
     session: AsyncSession = Depends(get_session)

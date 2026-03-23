@@ -1,0 +1,1006 @@
+import os
+import time
+import subprocess
+import psutil
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import MetaTrader5 as mt5
+import threading
+import uuid
+from datetime import datetime
+import pickle
+import atexit
+from waitress import serve
+import logging
+from functools import wraps
+from contextlib import contextmanager
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def timeout_decorator(seconds=30):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            result = [None]
+            exception = [None]
+            
+            def target():
+                try:
+                    result[0] = func(*args, **kwargs)
+                except Exception as e:
+                    exception[0] = e
+            
+            thread = threading.Thread(target=target, daemon=True)
+            thread.start()
+            thread.join(timeout=seconds)
+            
+            if thread.is_alive():
+                logger.error(f"Function {func.__name__} timed out after {seconds}s")
+                return None, f"Operation timed out after {seconds}s"
+            
+            if exception[0]:
+                raise exception[0]
+            
+            return result[0]
+        return wrapper
+    return decorator
+
+@contextmanager
+def safe_lock(lock, timeout=5):
+    acquired = lock.acquire(timeout=timeout)
+    if not acquired:
+        raise TimeoutError(f"Could not acquire lock within {timeout} seconds")
+    try:
+        yield
+    finally:
+        lock.release()
+
+SAFE_ACCOUNT = {
+    'login': 5043759917,
+    'password': 'Ye!eGs3w',
+    'server': 'MetaQuotes-Demo'
+}
+
+MT5_INSTALLATIONS = {
+    'mt5_auto_trade': {
+        'path': r"C:\Program Files\MetaTrader 5\terminal64.exe",
+        'data_path': r"C:\Program Files\MetaTrader 5",
+        'display_name': 'MT5 Auto Trade',
+        'status': 'stopped',
+        'process': None,
+        'pid': None,
+        'session_id': None,
+        'login': None,
+        'last_used': None,
+        'lock': threading.Lock()  # Per-installation lock
+    },
+    'mt5_copy_trade': {
+        'path': r"C:\Program Files\MetaTrader 5 Copy Trade\terminal64.exe",
+        'data_path': r"C:\Program Files\MetaTrader 5 Copy Trade",
+        'display_name': 'MT5 Copy Trade',
+        'status': 'stopped',
+        'process': None,
+        'pid': None,
+        'session_id': None,
+        'login': None,
+        'last_used': None,
+        'lock': threading.Lock()
+    },
+    'mt5_prop_firm': {
+        'path': r"C:\Program Files\MetaTrader 5 Prop Firm\terminal64.exe",
+        'data_path': r"C:\Program Files\MetaTrader 5 Prop Firm",
+        'display_name': 'MT5 Prop Firm',
+        'status': 'stopped',
+        'process': None,
+        'pid': None,
+        'session_id': None,
+        'login': None,
+        'last_used': None,
+        'lock': threading.Lock()
+    }
+}
+
+active_logins = {}
+sessions = {}
+disconnected_accounts = {}
+
+DATA_FILE = "mt5_backup.pkl"
+
+app = Flask(__name__)
+CORS(app)
+
+# Global locks
+installations_lock = threading.RLock()  # Use RLock for nested locking
+sessions_lock = threading.RLock()
+active_logins_lock = threading.RLock()
+disconnected_lock = threading.RLock()
+
+def save_state():
+    """Save all state to file"""
+    state = {
+        'disconnected_accounts': disconnected_accounts,
+        'sessions': sessions,
+        'active_logins': active_logins,
+        'timestamp': datetime.now().isoformat()
+    }
+    try:
+        with open(DATA_FILE, 'wb') as f:
+            pickle.dump(state, f)
+        logger.info(f"State saved to {DATA_FILE}")
+    except Exception as e:
+        logger.error(f"Error saving state: {e}")
+
+def load_state():
+    """Load state from file"""
+    global disconnected_accounts, sessions, active_logins
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, 'rb') as f:
+                state = pickle.load(f)
+            disconnected_accounts = state.get('disconnected_accounts', {})
+            sessions = state.get('sessions', {})
+            active_logins = state.get('active_logins', {})
+            logger.info(f"Loaded {len(sessions)} sessions from backup")
+        except Exception as e:
+            logger.error(f"Error loading state: {e}")
+
+def safe_mt5_operation(operation, *args, max_retries=3, **kwargs):
+    """Wrapper for MT5 operations with retry logic and timeout"""
+    for attempt in range(max_retries):
+        try:
+            result = operation(*args, **kwargs)
+            return True, result
+        except Exception as e:
+            logger.warning(f"MT5 operation failed (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(1)
+            else:
+                return False, str(e)
+    return False, "Max retries exceeded"
+
+def is_process_running(pid):
+    """Check if a process is still running"""
+    try:
+        if pid is None:
+            return False
+        process = psutil.Process(pid)
+        return process.is_running() and process.status() != psutil.STATUS_ZOMBIE
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        return False
+
+@timeout_decorator(seconds=20)
+def start_mt5_installation(installation_name):
+    if installation_name not in MT5_INSTALLATIONS:
+        return False, f"Installation {installation_name} not found"
+
+    installation = MT5_INSTALLATIONS[installation_name]
+    
+    # Check if already running
+    if installation['status'] == 'running' and is_process_running(installation['pid']):
+        return True, f"{installation['display_name']} already running"
+
+    try:
+        logger.info(f"Starting {installation['display_name']}...")
+        
+        # Kill any existing orphaned processes
+        os.system(f'taskkill /F /FI "IMAGENAME eq terminal64.exe" /FI "WINDOWTITLE eq {installation_name}*" >nul 2>&1')
+        time.sleep(2)
+        
+        process = subprocess.Popen(
+            [installation['path'], '/portable'],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW
+        )
+        
+        installation['process'] = process
+        installation['pid'] = process.pid
+        installation['status'] = 'running'
+        
+        # Wait for process to stabilize
+        time.sleep(8)
+        
+        # Verify process is still running
+        if not is_process_running(process.pid):
+            installation['status'] = 'stopped'
+            return False, "Process died immediately after start"
+        
+        logger.info(f"{installation['display_name']} started (PID: {process.pid})")
+        return True, f"{installation['display_name']} started"
+        
+    except Exception as e:
+        logger.error(f"Failed to start {installation['display_name']}: {e}")
+        installation['status'] = 'stopped'
+        return False, str(e)
+
+@timeout_decorator(seconds=15)
+def stop_mt5_installation(installation_name, force=False):
+    if installation_name not in MT5_INSTALLATIONS:
+        return False, f"Installation {installation_name} not found"
+
+    installation = MT5_INSTALLATIONS[installation_name]
+    
+    if installation['status'] != 'running' and not force:
+        return True, f"{installation['display_name']} already stopped"
+
+    try:
+        logger.info(f"Stopping {installation['display_name']}...")
+        
+        # Shutdown MT5 connection
+        try:
+            mt5.shutdown()
+        except:
+            pass
+        
+        # Try graceful termination first
+        if installation['process']:
+            try:
+                installation['process'].terminate()
+                installation['process'].wait(timeout=3)
+            except:
+                pass
+        
+        # Force kill if needed
+        if installation['pid']:
+            try:
+                if is_process_running(installation['pid']):
+                    os.system(f"taskkill /F /PID {installation['pid']} >nul 2>&1")
+                    time.sleep(1)
+            except:
+                pass
+        
+        installation['status'] = 'stopped'
+        installation['process'] = None
+        installation['pid'] = None
+        
+        with safe_lock(active_logins_lock):
+            if installation_name in active_logins:
+                del active_logins[installation_name]
+        
+        logger.info(f"{installation['display_name']} stopped")
+        return True, f"{installation['display_name']} stopped"
+        
+    except Exception as e:
+        logger.error(f"Failed to stop {installation_name}: {e}")
+        return False, str(e)
+
+@timeout_decorator(seconds=25)
+def connect_to_installation(installation_name):
+    if installation_name not in MT5_INSTALLATIONS:
+        return False, f"Installation {installation_name} not found"
+
+    installation = MT5_INSTALLATIONS[installation_name]
+    
+    # Verify installation is running
+    if installation['status'] != 'running' or not is_process_running(installation['pid']):
+        success, message = start_mt5_installation(installation_name)
+        if not success:
+            return False, f"Failed to start installation: {message}"
+
+    try:
+        # Shutdown any existing connection first
+        try:
+            mt5.shutdown()
+        except:
+            pass
+        
+        time.sleep(1)
+        
+        # Initialize MT5
+        initialized = mt5.initialize(path=installation['path'])
+        
+        if not initialized:
+            error = mt5.last_error()
+            logger.error(f"MT5 Initialize failed: {error}")
+            return False, f"MT5 initialization failed: {error}"
+
+        # Verify connection
+        time.sleep(2)
+        terminal_info = mt5.terminal_info()
+        if not terminal_info:
+            return False, "MT5 terminal info unavailable"
+
+        # Login with safe account
+        safe_login = mt5.login(
+            login=SAFE_ACCOUNT['login'],
+            password=SAFE_ACCOUNT['password'],
+            server=SAFE_ACCOUNT['server']
+        )
+        
+        if safe_login:
+            logger.info(f"Connected to {installation['display_name']} with safe account")
+            return True, f"Connected to {installation['display_name']}"
+        else:
+            return False, f"Failed to login safe account on {installation['display_name']}"
+            
+    except Exception as e:
+        logger.error(f"Connection error to {installation_name}: {e}")
+        return False, str(e)
+
+def can_login_to_installation(installation_name, login):
+    try:
+        with safe_lock(active_logins_lock, timeout=2):
+            current_logins = active_logins.get(installation_name, {})
+            if str(login) in current_logins:
+                return False, f"Login {login} is already active on this installation"
+            return True, "Login allowed"
+    except TimeoutError:
+        return False, "System busy, try again"
+
+def add_login_to_installation(installation_name, login, session_id):
+    try:
+        with safe_lock(active_logins_lock):
+            if installation_name not in active_logins:
+                active_logins[installation_name] = {}
+            active_logins[installation_name][str(login)] = {
+                'session_id': session_id,
+                'login_time': datetime.now().isoformat()
+            }
+        
+        with safe_lock(installations_lock):
+            MT5_INSTALLATIONS[installation_name]['last_used'] = datetime.now()
+    except Exception as e:
+        logger.error(f"Error adding login to installation: {e}")
+
+def remove_login_from_installation(installation_name, login):
+    try:
+        with safe_lock(active_logins_lock):
+            if (installation_name in active_logins and 
+                str(login) in active_logins[installation_name]):
+                del active_logins[installation_name][str(login)]
+                if not active_logins[installation_name]:
+                    del active_logins[installation_name]
+        
+        with safe_lock(installations_lock):
+            installation = MT5_INSTALLATIONS[installation_name]
+            if installation['login'] == login:
+                installation['login'] = None
+                installation['session_id'] = None
+    except Exception as e:
+        logger.error(f"Error removing login from installation: {e}")
+
+@app.route('/login', methods=['POST'])
+def login():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'success': False, 'error': 'No JSON data provided'}), 400
+
+        login_num = int(data['login'])
+        password = data['password']
+        server = data['server']
+        installation_name = data.get('installation')
+
+        if not installation_name:
+            return jsonify({'success': False, 'error': 'Installation name is required'}), 400
+
+        logger.info(f"Login request: {login_num}@{server} on {installation_name}")
+
+        if installation_name not in MT5_INSTALLATIONS:
+            available = list(MT5_INSTALLATIONS.keys())
+            return jsonify({
+                'success': False,
+                'error': f'Installation {installation_name} not found',
+                'available_installations': available
+            }), 404
+
+        # Check if login is allowed
+        allowed, message = can_login_to_installation(installation_name, login_num)
+        if not allowed:
+            return jsonify({'success': False, 'error': message}), 409
+
+        # Connect to installation (with timeout)
+        result = connect_to_installation(installation_name)
+        if result is None:
+            return jsonify({'success': False, 'error': 'Connection timed out'}), 500
+        
+        success, connect_message = result
+        if not success:
+            return jsonify({'success': False, 'error': f'Failed to connect: {connect_message}'}), 500
+
+        time.sleep(2)
+
+        # Attempt login
+        authorized = mt5.login(login=login_num, password=password, server=server)
+
+        if authorized:
+            account_info = mt5.account_info()
+            if account_info is None:
+                return jsonify({'success': False, 'error': 'Auth success but failed to get account info'}), 500
+
+            session_id = str(uuid.uuid4())
+            
+            with safe_lock(sessions_lock):
+                sessions[session_id] = {
+                    'login': login_num,
+                    'password': password,
+                    'server': server,
+                    'installation': installation_name,
+                    'login_time': datetime.now().isoformat(),
+                    'last_activity': datetime.now(),
+                    'account_info': {
+                        'balance': account_info.balance,
+                        'equity': account_info.equity
+                    }
+                }
+
+            add_login_to_installation(installation_name, login_num, session_id)
+
+            with safe_lock(installations_lock):
+                MT5_INSTALLATIONS[installation_name]['session_id'] = session_id
+                MT5_INSTALLATIONS[installation_name]['login'] = login_num
+                MT5_INSTALLATIONS[installation_name]['last_used'] = datetime.now()
+
+            # Save state asynchronously
+            threading.Thread(target=save_state, daemon=True).start()
+
+            return jsonify({
+                'success': True,
+                'session_id': session_id,
+                'installation': installation_name,
+                'installation_display_name': MT5_INSTALLATIONS[installation_name]['display_name'],
+                'installation_status': MT5_INSTALLATIONS[installation_name]['status'],
+                'account': {
+                    'login': account_info.login,
+                    'balance': account_info.balance,
+                    'equity': account_info.equity,
+                    'server': account_info.server,
+                    'currency': account_info.currency,
+                    'leverage': account_info.leverage,
+                    'margin': account_info.margin,
+                    'free_margin': account_info.margin_free
+                },
+                'message': f'Logged into {MT5_INSTALLATIONS[installation_name]["display_name"]}'
+            })
+        else:
+            logger.warning(f"Login failed for {login_num}, switching to safe account...")
+            
+            # Fallback to safe account
+            safe_login = mt5.login(
+                login=SAFE_ACCOUNT['login'],
+                password=SAFE_ACCOUNT['password'],
+                server=SAFE_ACCOUNT['server']
+            )
+            
+            return jsonify({
+                'success': False,
+                'error': 'Authorization failed',
+                'fallback': 'Safe account logged in' if safe_login else 'Fallback also failed'
+            }), 401
+
+    except TimeoutError as e:
+        logger.error(f"Timeout in login: {e}")
+        return jsonify({'success': False, 'error': 'Operation timed out'}), 504
+    except Exception as e:
+        logger.error(f"Login error: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    try:
+        data = request.json
+        session_id = data.get('session_id')
+
+        if not session_id:
+            return jsonify({'success': False, 'error': 'Session ID required'}), 400
+
+        with safe_lock(sessions_lock):
+            if session_id not in sessions:
+                return jsonify({'success': False, 'error': 'Invalid or expired session'}), 404
+
+            session = sessions[session_id]
+            installation_name = session['installation']
+            login_num = session['login']
+            del sessions[session_id]
+
+        remove_login_from_installation(installation_name, login_num)
+
+        # Shutdown in background to avoid blocking
+        def shutdown_mt5():
+            try:
+                mt5.shutdown()
+            except:
+                pass
+        
+        threading.Thread(target=shutdown_mt5, daemon=True).start()
+
+        return jsonify({
+            'success': True,
+            'message': f"Logged out account {login_num}",
+            'installation': installation_name,
+            'session_id': session_id
+        })
+
+    except TimeoutError:
+        return jsonify({'success': False, 'error': 'Operation timed out'}), 504
+    except Exception as e:
+        logger.error(f"Logout error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/disconnect', methods=['POST'])
+def disconnect():
+    try:
+        data = request.json
+        target_login = data.get('login')
+        installation_name = data.get('installation')
+
+        if not target_login:
+            return jsonify({'success': False, 'error': 'Login ID required'}), 400
+
+        target_login = int(target_login)
+
+        # Find installation if not provided
+        if not installation_name:
+            with safe_lock(active_logins_lock):
+                for inst_name in MT5_INSTALLATIONS.keys():
+                    if inst_name in active_logins and str(target_login) in active_logins[inst_name]:
+                        installation_name = inst_name
+                        break
+
+        if not installation_name:
+            return jsonify({'success': False, 'error': 'Account not found in any installation'}), 404
+
+        if installation_name not in MT5_INSTALLATIONS:
+            return jsonify({'success': False, 'error': f'Invalid installation: {installation_name}'}), 400
+
+        removed_count = 0
+        disconnected_sessions = []
+
+        with safe_lock(sessions_lock):
+            sessions_to_remove = []
+            for session_id, session_data in sessions.items():
+                if (int(session_data['login']) == target_login and 
+                    session_data['installation'] == installation_name):
+                    sessions_to_remove.append(session_id)
+                    disconnected_sessions.append(session_data)
+
+            for sid in sessions_to_remove:
+                del sessions[sid]
+                removed_count += 1
+
+        if removed_count == 0:
+            return jsonify({'success': False, 'error': 'Account not found in active sessions'}), 404
+
+        with safe_lock(disconnected_lock):
+            if installation_name not in disconnected_accounts:
+                disconnected_accounts[installation_name] = {}
+            
+            disconnected_accounts[installation_name][target_login] = {
+                'login': target_login,
+                'server': disconnected_sessions[0]['server'],
+                'password': disconnected_sessions[0]['password'],
+                'installation': installation_name,
+                'disconnected_time': datetime.now().isoformat(),
+                'sessions_closed': removed_count
+            }
+
+        remove_login_from_installation(installation_name, target_login)
+
+        # Save state asynchronously
+        threading.Thread(target=save_state, daemon=True).start()
+
+        return jsonify({
+            'success': True,
+            'message': f"Account {target_login} disconnected from {installation_name}",
+            'installation': installation_name,
+            'sessions_closed': removed_count,
+            'status': 'Account marked for deletion. Call /delete to permanently remove.',
+            'disconnected_at': disconnected_accounts[installation_name][target_login]['disconnected_time']
+        })
+
+    except TimeoutError:
+        return jsonify({'success': False, 'error': 'Operation timed out'}), 504
+    except Exception as e:
+        logger.error(f"Disconnect error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/disconnected', methods=['GET'])
+def get_disconnected():
+    try:
+        installation_filter = request.args.get('installation')
+
+        with safe_lock(disconnected_lock):
+            disconnected_list = []
+            installations_to_check = [installation_filter] if installation_filter else MT5_INSTALLATIONS.keys()
+
+            for installation_name in installations_to_check:
+                if installation_name in disconnected_accounts:
+                    for login, data in disconnected_accounts[installation_name].items():
+                        disconnected_list.append({
+                            'login': login,
+                            'server': data['server'],
+                            'installation': data['installation'],
+                            'disconnected_time': data['disconnected_time'],
+                            'sessions_closed': data['sessions_closed']
+                        })
+
+        return jsonify({
+            'success': True,
+            'disconnected_accounts': disconnected_list,
+            'total': len(disconnected_list)
+        })
+
+    except TimeoutError:
+        return jsonify({'success': False, 'error': 'Operation timed out'}), 504
+    except Exception as e:
+        logger.error(f"Get disconnected error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/delete', methods=['POST'])
+def delete():
+    try:
+        data = request.json or {}
+        installation_name = data.get('installation')
+        
+        installations_to_process = [installation_name] if installation_name else list(MT5_INSTALLATIONS.keys())
+        results = {}
+
+        for inst_name in installations_to_process:
+            if inst_name not in MT5_INSTALLATIONS:
+                results[inst_name] = {'success': False, 'error': 'Invalid installation'}
+                continue
+
+            with safe_lock(disconnected_lock):
+                if inst_name not in disconnected_accounts or not disconnected_accounts[inst_name]:
+                    results[inst_name] = {'success': False, 'error': 'No accounts to delete'}
+                    continue
+
+                accounts_to_delete = list(disconnected_accounts[inst_name].keys())
+
+            # Get remaining sessions before shutdown
+            with safe_lock(sessions_lock):
+                remaining_sessions = []
+                for session_id, session_data in sessions.items():
+                    if (session_data['installation'] == inst_name and 
+                        int(session_data['login']) not in accounts_to_delete):
+                        remaining_sessions.append(session_data)
+
+            config = MT5_INSTALLATIONS[inst_name]
+            data_path = config['data_path']
+            config_path = os.path.join(data_path, "Config")
+            accounts_dat = os.path.join(config_path, "accounts.dat")
+
+            logger.info(f"Shutting down {inst_name}...")
+            
+            # Shutdown MT5 safely
+            try:
+                mt5.shutdown()
+            except:
+                pass
+            
+            time.sleep(2)
+
+            # Kill process
+            if config['pid']:
+                os.system(f"taskkill /F /PID {config['pid']} >nul 2>&1")
+            
+            time.sleep(3)
+
+            # Delete accounts.dat with retries
+            max_retries = 3
+            deleted = False
+            
+            for attempt in range(max_retries):
+                try:
+                    if os.path.exists(accounts_dat):
+                        os.remove(accounts_dat)
+                        logger.info(f"Attempt {attempt + 1}: Deleted {accounts_dat}")
+                        deleted = True
+                        break
+                    else:
+                        deleted = True
+                        break
+                except PermissionError:
+                    logger.warning(f"Attempt {attempt + 1}: File locked, waiting...")
+                    time.sleep(2)
+                    os.system("taskkill /F /IM terminal64.exe >nul 2>&1")
+                    time.sleep(1)
+
+            if not deleted:
+                results[inst_name] = {'success': False, 'error': 'Could not delete accounts.dat after 3 attempts'}
+                continue
+
+            logger.info(f"Restarting {inst_name}...")
+            time.sleep(2)
+
+            # Restart installation
+            try:
+                process = subprocess.Popen(
+                    [config['path'], '/portable'],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+                
+                config['process'] = process
+                config['pid'] = process.pid
+                config['status'] = 'running'
+                
+                time.sleep(12)
+
+                # Initialize MT5
+                init_success = mt5.initialize(
+                    path=config['path'],
+                    login=SAFE_ACCOUNT['login'],
+                    password=SAFE_ACCOUNT['password'],
+                    server=SAFE_ACCOUNT['server']
+                )
+
+                if not init_success:
+                    logger.warning(f"Failed to initialize with credentials, trying without...")
+                    time.sleep(3)
+                    init_success = mt5.initialize(path=config['path'])
+
+                if not init_success:
+                    results[inst_name] = {'success': False, 'error': 'Failed to initialize MT5 after restart'}
+                    continue
+
+                time.sleep(1)
+
+                # Login safe account
+                safe_logged = mt5.login(
+                    login=SAFE_ACCOUNT['login'],
+                    password=SAFE_ACCOUNT['password'],
+                    server=SAFE_ACCOUNT['server']
+                )
+
+                if not safe_logged:
+                    logger.error(f"Warning: Safe account login failed")
+                    results[inst_name] = {'success': False, 'error': 'Failed to login safe account'}
+                    continue
+                else:
+                    logger.info(f"Successfully initialized {inst_name} with safe account")
+
+                time.sleep(2)
+
+                # Restore remaining sessions
+                restored_count = 0
+                for session in remaining_sessions:
+                    try:
+                        success = mt5.login(
+                            login=session['login'],
+                            password=session['password'],
+                            server=session['server']
+                        )
+                        if success:
+                            restored_count += 1
+                            logger.info(f"Re-logged {session['login']}: SUCCESS")
+                        else:
+                            logger.warning(f"Re-logged {session['login']}: FAILED")
+                    except Exception as e:
+                        logger.error(f"Error restoring session {session['login']}: {e}")
+
+                if restored_count == 0 and len(remaining_sessions) == 0:
+                    logger.info(f"No sessions to restore. Safe account remains logged in.")
+
+                with safe_lock(disconnected_lock):
+                    disconnected_accounts[inst_name].clear()
+
+                results[inst_name] = {
+                    'success': True,
+                    'accounts_deleted': accounts_to_delete,
+                    'accounts_deleted_count': len(accounts_to_delete),
+                    'accounts_restored': restored_count,
+                    'accounts_dat_deleted': deleted
+                }
+
+            except Exception as e:
+                logger.error(f"Error restarting {inst_name}: {e}")
+                results[inst_name] = {'success': False, 'error': str(e)}
+
+        # Save state asynchronously
+        threading.Thread(target=save_state, daemon=True).start()
+
+        return jsonify({
+            'success': True,
+            'message': 'Delete operation completed',
+            'results': results
+        })
+
+    except TimeoutError:
+        return jsonify({'success': False, 'error': 'Operation timed out'}), 504
+    except Exception as e:
+        logger.error(f"Delete error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/installations', methods=['GET'])
+def list_installations():
+    try:
+        with safe_lock(installations_lock):
+            installation_list = []
+            for name, installation in MT5_INSTALLATIONS.items():
+                installation_list.append({
+                    'name': name,
+                    'display_name': installation['display_name'],
+                    'status': installation['status'],
+                    'pid': installation['pid'],
+                    'path': installation['path'],
+                    'last_used': installation['last_used'].isoformat() if installation['last_used'] else None
+                })
+
+        with safe_lock(active_logins_lock):
+            active_counts = {}
+            for name, logins in active_logins.items():
+                active_counts[name] = len(logins)
+
+        with safe_lock(disconnected_lock):
+            disconnected_counts = {}
+            for name, accounts in disconnected_accounts.items():
+                disconnected_counts[name] = len(accounts)
+
+        return jsonify({
+            'success': True,
+            'installations': installation_list,
+            'active_logins_per_installation': active_counts,
+            'disconnected_per_installation': disconnected_counts,
+            'total_installations': len(installation_list)
+        })
+
+    except TimeoutError:
+        return jsonify({'success': False, 'error': 'Operation timed out'}), 504
+    except Exception as e:
+        logger.error(f"List installations error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/active-logins', methods=['GET'])
+def list_active_logins():
+    try:
+        with safe_lock(active_logins_lock):
+            result = {}
+            for installation_name, logins in active_logins.items():
+                result[installation_name] = {
+                    'count': len(logins),
+                    'logins': [
+                        {
+                            'login': login,
+                            'session_id': info['session_id'],
+                            'login_time': info['login_time']
+                        }
+                        for login, info in logins.items()
+                    ]
+                }
+
+        return jsonify({
+            'success': True,
+            'active_logins': result,
+            'total_active_logins': sum(len(inst['logins']) for inst in result.values())
+        })
+
+    except TimeoutError:
+        return jsonify({'success': False, 'error': 'Operation timed out'}), 504
+    except Exception as e:
+        logger.error(f"List active logins error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/sessions', methods=['GET'])
+def list_sessions():
+    try:
+        with safe_lock(sessions_lock):
+            session_list = []
+            for session_id, session_data in sessions.items():
+                session_list.append({
+                    'session_id': session_id,
+                    'login': session_data['login'],
+                    'server': session_data['server'],
+                    'installation': session_data['installation'],
+                    'login_time': session_data['login_time'],
+                    'last_activity': session_data['last_activity'].isoformat()
+                })
+
+        return jsonify({
+            'success': True,
+            'sessions': session_list,
+            'total': len(session_list)
+        })
+
+    except TimeoutError:
+        return jsonify({'success': False, 'error': 'Operation timed out'}), 504
+    except Exception as e:
+        logger.error(f"List sessions error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/installation/start/<installation_name>', methods=['POST'])
+def start_installation(installation_name):
+    if installation_name not in MT5_INSTALLATIONS:
+        return jsonify({'success': False, 'error': f'Installation {installation_name} not found'}), 404
+
+    result = start_mt5_installation(installation_name)
+    if result is None:
+        return jsonify({'success': False, 'error': 'Operation timed out'}), 504
+    
+    success, message = result
+    return jsonify({
+        'success': success,
+        'message': message,
+        'installation': installation_name
+    })
+
+@app.route('/installation/stop/<installation_name>', methods=['POST'])
+def stop_installation(installation_name):
+    if installation_name not in MT5_INSTALLATIONS:
+        return jsonify({'success': False, 'error': f'Installation {installation_name} not found'}), 404
+
+    result = stop_mt5_installation(installation_name, force=True)
+    if result is None:
+        return jsonify({'success': False, 'error': 'Operation timed out'}), 504
+    
+    success, message = result
+    return jsonify({
+        'success': success,
+        'message': message,
+        'installation': installation_name
+    })
+
+@app.route('/health', methods=['GET'])
+def health():
+    try:
+        with safe_lock(installations_lock, timeout=2):
+            running_count = sum(1 for i in MT5_INSTALLATIONS.values() if i['status'] == 'running')
+
+        with safe_lock(sessions_lock, timeout=2):
+            active_sessions = len(sessions)
+
+        with safe_lock(active_logins_lock, timeout=2):
+            total_active_logins = sum(len(logins) for logins in active_logins.values())
+
+        with safe_lock(disconnected_lock, timeout=2):
+            total_disconnected = sum(len(accounts) for accounts in disconnected_accounts.values())
+
+        return jsonify({
+            'status': 'ok',
+            'installations_running': running_count,
+            'installations_total': len(MT5_INSTALLATIONS),
+            'active_sessions': active_sessions,
+            'total_active_logins': total_active_logins,
+            'total_disconnected_accounts': total_disconnected,
+            'timestamp': datetime.now().isoformat()
+        })
+    
+    except TimeoutError:
+        return jsonify({
+            'status': 'degraded',
+            'error': 'System busy',
+            'timestamp': datetime.now().isoformat()
+        }), 503
+    except Exception as e:
+        logger.error(f"Health check error: {e}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+# Error handlers
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"Internal error: {error}")
+    return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+@app.errorhandler(504)
+def timeout_error(error):
+    logger.error(f"Timeout error: {error}")
+    return jsonify({'success': False, 'error': 'Request timeout'}), 504
+
+if __name__ == '__main__':
+    print("=" * 60)
+    print("MULTI-INSTALLATION MT5 API (FIXED)")
+    print("=" * 60)
+    print("Available Installations:")
+    for name, installation in MT5_INSTALLATIONS.items():
+        print(f"  {installation['display_name']} ({name})")
+        print(f"  Path: {installation['path']}")
+    print("=" * 60)
+    print("API running on: http://0.0.0.0:8080")
+    print("=" * 60)
+
+    # Load previous state if exists
+    load_state()
+
+    # Register save_state to be called on exit
+    atexit.register(save_state)
+
+    # Start server
+    logger.info("Starting production server on port 8080...")
+    serve(app, host='0.0.0.0', port=8080, threads=10)

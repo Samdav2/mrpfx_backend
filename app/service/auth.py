@@ -8,6 +8,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.model.user import User
 from app.repo.user import UserRepository
+from app.repo.wordpress.user import WPUserRepository
+from app.repo.wordpress.options import WPOptionRepository
 from app.schema.auth import SignupRequest, LoginRequest, TokenResponse
 from app.schema.user import UserCreate
 from app.core.security import (
@@ -29,6 +31,8 @@ class AuthService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.user_repo = UserRepository(session)
+        self.wp_user_repo = WPUserRepository(session)
+        self.option_repo = WPOptionRepository(session)
 
     async def signup(self, request: SignupRequest, background_tasks: BackgroundTasks) -> Tuple[User, str]:
         """
@@ -126,6 +130,31 @@ class AuthService:
                 detail="Invalid credentials"
             )
 
+        # Check for forced password reset
+        force_reset_date_str = await self.option_repo.get_option("force_password_reset_date")
+        if force_reset_date_str:
+            force_reset_date = int(force_reset_date_str)
+            last_reset_str = await self.wp_user_repo.get_last_password_reset(user.ID)
+            # Compare with user_registered as well
+            from datetime import datetime
+            try:
+                # user_registered is now a string "YYYY-MM-DD HH:MM:SS"
+                reg_dt = datetime.strptime(user.user_registered, "%Y-%m-%d %H:%M:%S")
+                reg_ts = int(reg_dt.timestamp())
+            except (ValueError, TypeError):
+                reg_ts = 0
+
+            last_reset_ts = int(last_reset_str) if last_reset_str else 0
+
+            # Use the most recent of the two
+            effective_reset_ts = max(last_reset_ts, reg_ts)
+            print(f"[AUTH DEBUG] user_reg: {user.user_registered}, reg_ts: {reg_ts}, last: {last_reset_ts}, force: {force_reset_date}")
+            if effective_reset_ts < force_reset_date:
+                print(f"[AUTH DEBUG] FORCING RESET: {effective_reset_ts} < {force_reset_date}")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="PASSWORD_RESET_REQUIRED"
+                )
 
         token_data = {"sub": str(user.ID), "email": user.user_email}
         access_token = create_access_token(token_data)
@@ -170,6 +199,31 @@ class AuthService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied. Admin privileges required."
             )
+
+        # Check for forced password reset (Admins also follow this policy)
+        force_reset_date_str = await self.option_repo.get_option("force_password_reset_date")
+        if force_reset_date_str:
+            force_reset_date = int(force_reset_date_str)
+            last_reset_str = await self.wp_user_repo.get_last_password_reset(user.ID)
+            # Compare with user_registered as well
+            from datetime import datetime
+            try:
+                # user_registered is now a string "YYYY-MM-DD HH:MM:SS"
+                reg_dt = datetime.strptime(user.user_registered, "%Y-%m-%d %H:%M:%S")
+                reg_ts = int(reg_dt.timestamp())
+            except (ValueError, TypeError):
+                reg_ts = 0
+
+            last_reset_ts = int(last_reset_str) if last_reset_str else 0
+
+            # Use the most recent of the two
+            effective_reset_ts = max(last_reset_ts, reg_ts)
+
+            if effective_reset_ts < force_reset_date:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="PASSWORD_RESET_REQUIRED"
+                )
 
         token_data = {"sub": str(user.ID), "email": user.user_email, "role": "admin"}
         access_token = create_access_token(token_data)
@@ -340,6 +394,19 @@ class AuthService:
         await self.user_repo.update_password(user, hashed_password)
         await self.user_repo.set_activation_key(user, "")
 
+        # Update last reset timestamp and user_registered (requested by user)
+        from sqlmodel import update
+        user_id = user.ID
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[DEBUG] Direct SQL Update: user {user_id} registered date to {now_str}")
+
+        await self.session.execute(
+            update(User).where(User.ID == user_id).values(user_registered=now_str)
+        )
+        await self.session.commit()
+
+        await self.wp_user_repo.update_last_password_reset(user_id)
+
         return user
 
     async def refresh_token(self, refresh_token: str) -> TokenResponse:
@@ -418,5 +485,17 @@ class AuthService:
 
         hashed_password = hash_password(new_password)
         await self.user_repo.update_password(user, hashed_password)
+
+        # Update last reset timestamp and user_registered
+        from sqlmodel import update
+        user_id = user.ID
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        await self.session.execute(
+            update(User).where(User.ID == user_id).values(user_registered=now_str)
+        )
+        await self.session.commit()
+
+        await self.wp_user_repo.update_last_password_reset(user_id)
 
         return user

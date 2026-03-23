@@ -1,0 +1,46 @@
+INFO:     Will watch for changes in these directories: ['/home/rehack/mrp_frontend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [91100] using WatchFiles
+INFO:     Started server process [91115]
+INFO:     Waiting for application startup.
+2026-03-21 11:03:30,082 - app.main - INFO - Starting MRPFX Backend...
+INFO:     Application startup complete.
+INFO:     127.0.0.1:48584 - "POST /api/v1/account-management/connect HTTP/1.1" 201 Created
+INFO:     127.0.0.1:56232 - "GET /api/v1/traders/managerB/performance HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46814 - "POST /api/v1/account-management/connect HTTP/1.1" 201 Created
+INFO:     127.0.0.1:40504 - "GET /api/v1/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58692 - "GET /api/v1/traders/managerA/performance HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34224 - "POST /api/v1/account-management/connect HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60544 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60580 - "GET /api/v1/wordpress/wc/my-orders?skip=0&limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60564 - "GET /api/v1/wordpress/wc/my-orders/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60558 - "GET /api/v1/wordpress/learnpress/my-courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60604 - "GET /api/v1/prop-firm/registrations?limit=10&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60590 - "GET /api/v1/wordpress/posts?status=publish&limit=4&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60622 - "GET /api/v1/wordpress/wc/my-orders/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60638 - "GET /api/v1/wordpress/wc/my-orders?skip=0&limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60648 - "GET /api/v1/wordpress/learnpress/my-courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60664 - "GET /api/v1/prop-firm/registrations?limit=10&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60676 - "GET /api/v1/wordpress/posts?status=publish&limit=4&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44814 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44834 - "GET /api/v1/wordpress/wc/my-orders/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44826 - "GET /api/v1/wordpress/learnpress/my-courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44862 - "GET /api/v1/account-management/connections HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:44838 - "GET /api/v1/wordpress/wc/my-orders?skip=0&limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44852 - "GET /api/v1/prop-firm/registrations?limit=10&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44840 - "GET /api/v1/wordpress/posts?status=publish&limit=4&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57774 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57816 - "GET /api/v1/account-management/connections HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57786 - "GET /api/v1/wordpress/learnpress/my-courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57792 - "GET /api/v1/wordpress/wc/my-orders/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57794 - "GET /api/v1/wordpress/wc/my-orders?skip=0&limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57802 - "GET /api/v1/prop-firm/registrations?limit=10&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57796 - "GET /api/v1/wordpress/posts?status=publish&limit=4&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57650 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57670 - "GET /api/v1/wordpress/wc/my-orders/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57680 - "GET /api/v1/wordpress/wc/my-orders?skip=0&limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57664 - "GET /api/v1/wordpress/learnpress/my-courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57712 - "GET /api/v1/account-management/connections HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57708 - "GET /api/v1/prop-firm/registrations?limit=10&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57692 - "GET /api/v1/wordpress/posts?status=publish&limit=4&offset=0 HTTP/1.1" 200 OK

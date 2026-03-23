@@ -14,33 +14,33 @@ class UserRepository:
 
     async def get_by_id(self, user_id: int) -> Optional[User]:
         """Get user by ID."""
-        result = await self.session.execute(
+        result = await self.session.exec(
             select(User).where(User.ID == user_id)
         )
-        return result.scalar_one_or_none()
+        return result.first()
 
     async def get_by_email(self, email: str) -> Optional[User]:
         """Get user by email address."""
-        result = await self.session.execute(
+        result = await self.session.exec(
             select(User).where(User.user_email == email)
         )
-        return result.scalars().first()
+        return result.first()
 
     async def get_by_login(self, login: str) -> Optional[User]:
         """Get user by username (user_login)."""
-        result = await self.session.execute(
+        result = await self.session.exec(
             select(User).where(User.user_login == login)
         )
-        return result.scalars().first()
+        return result.first()
 
     async def get_by_email_or_login(self, identifier: str) -> Optional[User]:
         """Get user by email or username."""
-        result = await self.session.execute(
+        result = await self.session.exec(
             select(User).where(
                 (User.user_email == identifier) | (User.user_login == identifier)
             )
         )
-        return result.scalars().first()
+        return result.first()
 
     async def create(self, user_data: UserCreate) -> User:
         """Create a new user."""
@@ -92,14 +92,14 @@ class UserRepository:
 
     async def exists_by_email(self, email: str) -> bool:
         """Check if a user with the given email exists."""
-        result = await self.session.execute(
+        result = await self.session.exec(
             select(User.ID).where(User.user_email == email)
         )
-        return result.scalars().first() is not None
+        return result.first() is not None
 
     async def exists_by_login(self, login: str) -> bool:
         """Check if a user with the given username exists."""
-        result = await self.session.execute(
+        result = await self.session.exec(
             select(User.ID).where(User.user_login == login)
         )
-        return result.scalars().first() is not None
+        return result.first() is not None

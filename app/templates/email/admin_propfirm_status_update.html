@@ -1,0 +1,25 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<div>
+    <h2>Prop Firm Registration Updated</h2>
+    <p>An existing Prop Firm registration has been updated by an administrator.</p>
+
+    <div class="box">
+        <p class="box-label">User Details</p>
+        <p><strong>Name:</strong> {{ username }}</p>
+        <p><strong>Email:</strong> {{ user_email }}</p>
+
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+
+        <p class="box-label">Registration Details</p>
+        <p><strong>Order ID:</strong> {{ order_id }}</p>
+        <p><strong>New Status:</strong> <span style="color: #3b82f6; font-weight: bold;">{{ status }}</span></p>
+        <p><strong>Update Date:</strong> {{ update_date }}</p>
+    </div>
+
+    <div style="text-align: center;">
+        <a href="{{ admin_dashboard_url }}" class="button">View in Admin Panel</a>
+    </div>
+</div>
+{% endblock %}

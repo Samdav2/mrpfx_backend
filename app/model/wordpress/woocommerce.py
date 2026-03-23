@@ -300,8 +300,8 @@ class WCOrderTaxLookup(SQLModel, table=True):
     """WooCommerce order tax lookup (8jH_wc_order_tax_lookup)"""
     __tablename__ = "8jH_wc_order_tax_lookup"
 
-    order_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
-    tax_rate_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
+    order_id: int = Field(primary_key=True)
+    tax_rate_id: int = Field(primary_key=True)
     date_created: datetime = Field(default_factory=datetime.now)
     shipping_tax: float = Field(default=0)
     order_tax: float = Field(default=0)
@@ -324,8 +324,8 @@ class WCReservedStock(SQLModel, table=True):
     """WooCommerce reserved stock (8jH_wc_reserved_stock)"""
     __tablename__ = "8jH_wc_reserved_stock"
 
-    order_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
-    product_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
+    order_id: int = Field(primary_key=True)
+    product_id: int = Field(primary_key=True)
     stock_quantity: float = Field(default=0)
     timestamp: datetime = Field(default_factory=datetime.now)
     expires: datetime = Field(default_factory=datetime.now)
@@ -363,16 +363,16 @@ class WCCategoryLookup(SQLModel, table=True):
     """WooCommerce category lookup (8jH_wc_category_lookup)"""
     __tablename__ = "8jH_wc_category_lookup"
 
-    category_tree_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
-    category_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
+    category_tree_id: int = Field(primary_key=True)
+    category_id: int = Field(primary_key=True)
 
 
 class WCOrderCouponLookup(SQLModel, table=True):
     """WooCommerce order coupon lookup (8jH_wc_order_coupon_lookup)"""
     __tablename__ = "8jH_wc_order_coupon_lookup"
 
-    order_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
-    coupon_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
+    order_id: int = Field(primary_key=True)
+    coupon_id: int = Field(primary_key=True)
     date_created: datetime = Field(default_factory=datetime.now)
     discount_amount: float = Field(default=0)
 

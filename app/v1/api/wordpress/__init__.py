@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from app.dependencies.auth import get_current_user
 
 from .users import router as users_router
 from .members import router as members_router
@@ -31,3 +32,6 @@ router.include_router(forms_router, prefix="/wordpress/forms", tags=["Forms"])
 
 from .media import router as media_router
 router.include_router(media_router, prefix="/wordpress/media", tags=["Media"])
+
+from .dynamic_pages import router as dynamic_pages_router
+router.include_router(dynamic_pages_router, prefix="", tags=["Dynamic Pages"])

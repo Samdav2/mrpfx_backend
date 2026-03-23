@@ -24,6 +24,7 @@ router = APIRouter(prefix="/crypto-payments", tags=["Crypto Payments"])
 async def get_api_status(
     request: Request,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Check NOWPayments API status"""
     service = NOWPaymentsService(session)
@@ -35,6 +36,7 @@ async def get_api_status(
 async def get_available_currencies(
     request: Request,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Get list of available cryptocurrencies"""
     service = NOWPaymentsService(session)
@@ -51,6 +53,7 @@ async def get_minimum_amount(
     is_fixed_rate: bool = False,
     is_fee_paid_by_user: bool = False,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Get minimum payment amount for currency pair"""
     service = NOWPaymentsService(session)
@@ -70,6 +73,7 @@ async def get_estimated_price(
     currency_from: str,
     currency_to: str,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Get estimated price for conversion"""
     service = NOWPaymentsService(session)
@@ -284,11 +288,37 @@ async def process_payment_update(payment_id: UUID, payment_status: str, user_id:
                 subject="New Crypto Payment Received",
                 template_name="admin_crypto_payment_received.html",
                 context={
-                    "user_email": user_email,
+                    "user_name": user_name,
                     "payment_id": str(payment_id),
                     "status": payment_status
                 }
             )
+
+        # Update WooCommerce Order Status
+        from app.repo.wordpress.woocommerce import WCOrderRepository
+        from app.schema.wordpress.woocommerce import WCOrderUpdate
+        from app.model.crypto_payment import CryptoPayment
+        from app.core.logging_config import logger
+
+        async with AsyncSession(engine) as session:
+            crypto_payment = await session.get(CryptoPayment, payment_id)
+            if crypto_payment and crypto_payment.order_id:
+                try:
+                    # order_id in CryptoPayment is a string, might contain 'PROP-' prefix or be just a number
+                    raw_order_id = crypto_payment.order_id
+                    clean_order_id = raw_order_id.replace("PROP-", "")
+
+                    if clean_order_id.isdigit():
+                        order_id = int(clean_order_id)
+                        order_repo = WCOrderRepository(session)
+                        order = await order_repo.get_order(order_id)
+                        if order:
+                            await order_repo.update_order(order, WCOrderUpdate(status="completed"))
+                            logger.info(f"Successfully marked WooCommerce order {order_id} as completed for crypto payment {payment_id}")
+                        else:
+                            logger.warning(f"WooCommerce order {order_id} not found for crypto payment {payment_id}")
+                except Exception as e:
+                    logger.error(f"Failed to update WooCommerce order status for crypto payment {payment_id}: {str(e)}")
 
     elif payment_status == "partially_paid":
         # Partially paid - notify user
@@ -316,12 +346,41 @@ async def process_payment_update(payment_id: UUID, payment_status: str, user_id:
             }
         )
 
-    # Add your additional business logic here:
-    # - Update related orders
-    # - Trigger product delivery
-    # - Update user subscriptions
-    # - Log analytics events
-    # etc.
+    # Update related orders
+    if payment_status in ["finished", "confirmed"]:
+        async with AsyncSession(engine) as session:
+            from app.model.crypto_payment import CryptoPayment
+            from app.model.wordpress.woocommerce import WCOrder, WCOrderOperationalData
+            from sqlmodel import select
+
+            # Get the crypto payment to find the order_id
+            crypto_payment = await session.get(CryptoPayment, payment_id)
+            if crypto_payment and crypto_payment.order_id:
+                # Handle both numeric (WC) and prefixed (PropFirm) order IDs
+                order_id_str = str(crypto_payment.order_id)
+
+                # 1. Update WooCommerce Order if it's a numeric ID
+                if order_id_str.isdigit():
+                    wc_order_id = int(order_id_str)
+                    order = await session.get(WCOrder, wc_order_id)
+                    if order and order.status != "completed":
+                        from app.core.logging_config import logger
+                        logger.info(f"Crypto payment {payment_id} success. Updating WC Order {wc_order_id} to completed.")
+
+                        order.status = "completed"
+                        order.date_updated_gmt = datetime.now()
+                        session.add(order)
+
+                        # Update operational data (dates)
+                        op_stmt = select(WCOrderOperationalData).where(WCOrderOperationalData.order_id == wc_order_id)
+                        op_result = await session.exec(op_stmt)
+                        op_data = op_result.first()
+                        if op_data:
+                            op_data.date_completed_gmt = datetime.now()
+                            op_data.date_paid_gmt = datetime.now()
+                            session.add(op_data)
+
+                        await session.commit()
 
     # Update propfirm registration payment status if order_id is present
     if payment_status in ["finished", "confirmed", "failed"]:

@@ -2,6 +2,7 @@ import httpx
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 from uuid import UUID
+from sqlmodel import select, desc
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
@@ -14,6 +15,7 @@ from app.schema.crypto_payment import (
     CryptoPaymentCreate,
     CryptoPaymentUpdate
 )
+from app.model.services import PropFirmRegistration
 
 class NOWPaymentsService:
     def __init__(self, session: AsyncSession):
@@ -110,8 +112,31 @@ class NOWPaymentsService:
         }
         return await self._get("estimate", params=params)
 
+    async def _sanitize_order_id(self, order_id: str | None, user_id: int) -> str | None:
+        """
+        Sanitize order_id by replacing 'undefined' with the latest valid order_id from registrations.
+        """
+        if order_id and "undefined" in order_id:
+            # Try to find the latest PropFirmRegistration for this user
+            statement = select(PropFirmRegistration).where(
+                PropFirmRegistration.user_id == user_id
+            ).order_by(desc(PropFirmRegistration.created_at))
+
+            result = await self.session.exec(statement)
+            latest_reg = result.first()
+
+            if latest_reg and latest_reg.order_id:
+                from app.core.logging_config import logger
+                logger.info(f"Sanitizing order_id: '{order_id}' -> '{latest_reg.order_id}' for user {user_id}")
+                return latest_reg.order_id
+
+        return order_id
+
     async def create_invoice(self, invoice_data: NOWPaymentsInvoiceRequest, user_id: int) -> Any:
         """Create an invoice and save to DB"""
+        # Sanitize order_id
+        invoice_data.order_id = await self._sanitize_order_id(invoice_data.order_id, user_id)
+
         # Call API
         payload = invoice_data.dict(exclude_none=True)
         response = await self._post("invoice", payload)
@@ -154,6 +179,9 @@ class NOWPaymentsService:
 
     async def create_payment(self, payment_data: NOWPaymentsPaymentRequest, user_id: int) -> Any:
         """Create a payment and save to DB"""
+        # Sanitize order_id
+        payment_data.order_id = await self._sanitize_order_id(payment_data.order_id, user_id)
+
         # Call API
         payload = payment_data.dict(exclude_none=True)
         response = await self._post("payment", payload)

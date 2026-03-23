@@ -8,6 +8,12 @@
 
     <p>You can now access your dashboard and start trading:</p>
 
+    {% if message %}
+    <div style="margin: 25px 0; text-align: left;">
+        {{ message | safe }}
+    </div>
+    {% endif %}
+
     <a href="{{ dashboard_url }}" class="button">Go to Dashboard</a>
 </div>
 {% endblock %}

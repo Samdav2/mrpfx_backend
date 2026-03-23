@@ -125,3 +125,47 @@ class WPUserRepository:
 
         await self.session.commit()
         return True
+
+    # =========================================================================
+    # User Meta & Password Reset Methods
+    # =========================================================================
+
+    async def get_meta(self, user_id: int, meta_key: str) -> Optional[str]:
+        """Get a single meta value for a user."""
+        from app.model.wordpress.core import WPUserMeta
+        stmt = select(WPUserMeta).where(
+            WPUserMeta.user_id == user_id,
+            WPUserMeta.meta_key == meta_key
+        )
+        result = await self.session.exec(stmt)
+        meta = result.first()
+        return meta.meta_value if meta else None
+
+    async def set_meta(self, user_id: int, meta_key: str, meta_value: str) -> None:
+        """Set or update a meta value for a user."""
+        from app.model.wordpress.core import WPUserMeta
+        stmt = select(WPUserMeta).where(
+            WPUserMeta.user_id == user_id,
+            WPUserMeta.meta_key == meta_key
+        )
+        result = await self.session.exec(stmt)
+        meta = result.first()
+
+        if meta:
+            meta.meta_value = meta_value
+            self.session.add(meta)
+        else:
+            new_meta = WPUserMeta(user_id=user_id, meta_key=meta_key, meta_value=meta_value)
+            self.session.add(new_meta)
+
+        await self.session.commit()
+
+    async def get_last_password_reset(self, user_id: int) -> Optional[str]:
+        """Get the timestamp of the last password reset."""
+        return await self.get_meta(user_id, "_last_pass_reset")
+
+    async def update_last_password_reset(self, user_id: int) -> None:
+        """Update the last password reset timestamp to now."""
+        from datetime import datetime
+        now_ts = str(int(datetime.now().timestamp()))
+        await self.set_meta(user_id, "_last_pass_reset", now_ts)

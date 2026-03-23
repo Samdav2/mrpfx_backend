@@ -35,6 +35,7 @@ class UserUpdate(BaseModel):
     display_name: Optional[str] = None
     user_url: Optional[str] = None
     user_nicename: Optional[str] = None
+    user_registered: Optional[datetime] = None
 
 
 class ChangePasswordRequest(BaseModel):

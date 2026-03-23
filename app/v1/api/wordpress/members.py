@@ -4,8 +4,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.db.session import get_session
 from app.repo.wordpress.member import SWPMMemberRepository
 from app.schema.wordpress.member import SWPMMemberRead, SWPMMemberCreate, SWPMMemberUpdate
+from app.dependencies.auth import get_current_admin
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_admin)])
 
 @router.get("/{member_id}", response_model=SWPMMemberRead)
 async def get_member(

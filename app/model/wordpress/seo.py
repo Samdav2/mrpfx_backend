@@ -74,8 +74,8 @@ class YoastIndexableHierarchy(SQLModel, table=True):
     """Yoast SEO indexable hierarchy (8jH_yoast_indexable_hierarchy)"""
     __tablename__ = "8jH_yoast_indexable_hierarchy"
 
-    indexable_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True}, default=0)
-    ancestor_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True}, default=0)
+    indexable_id: int = Field(primary_key=True, default=0)
+    ancestor_id: int = Field(primary_key=True, default=0)
     depth: Optional[int] = Field(default=None)
     blog_id: int = Field(default=1)
 

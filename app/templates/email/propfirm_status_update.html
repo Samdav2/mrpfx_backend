@@ -1,0 +1,22 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h2>Prop Firm Registration Update</h2>
+    <p>Hello <strong>{{ username }}</strong>,</p>
+    <p>The status of your Prop Firm registration (Order ID: <strong>{{ order_id }}</strong>) has been updated.</p>
+
+    <div class="box">
+        <p class="box-label">New Status</p>
+        <p style="font-size: 20px; font-weight: bold; color: #3b82f6;">{{ status }}</p>
+    </div>
+
+    <p>You can check the progress and details in your dashboard:</p>
+
+    <a href="{{ dashboard_url }}" class="button">Go to Dashboard</a>
+
+    <p style="margin-top: 20px; font-size: 14px; color: #64748b;">
+        If you have any questions, please contact our support team via WhatsApp or Telegram.
+    </p>
+</div>
+{% endblock %}

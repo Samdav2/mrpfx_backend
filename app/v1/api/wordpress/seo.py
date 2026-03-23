@@ -2,6 +2,7 @@
 SEO API endpoints.
 Exposes Yoast SEO and Redirection plugin data.
 """
+from app.dependencies.auth import get_current_user
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session
@@ -10,7 +11,7 @@ from pydantic import BaseModel
 from app.db.session import get_session
 from app.repo.wordpress.seo import SEORepository
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 # =============================================================================

@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         if self.USE_SQLITE:
             return f"sqlite+aiosqlite:///{self.SQLITE_PATH}"
-        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
 
     @property
     def WP_DATABASE_URL(self) -> str:
@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1080
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # Encryption Key
+    ENCRYPTION_KEY: str = "tn4DES6YEUKFxpctSkJyWlcvssyMj9ypiRTGw7a8Etw="
 
     # Email Settings
     SMTP_HOST: str = "smtp.gmail.com"
@@ -65,6 +68,9 @@ class Settings(BaseSettings):
 
     # Password hashing
     BCRYPT_ROUNDS: int = 12
+
+    # Security API Key
+    API_KEY: str = ""
 
     class Config:
         env_file = ".env"

@@ -12,6 +12,12 @@
         <p><strong>Platform:</strong> {{ platform }}</p>
     </div>
 
+    {% if message %}
+    <div style="margin-bottom: 25px; text-align: left;">
+        {{ message | safe }}
+    </div>
+    {% endif %}
+
     <p>If this was you, no further action is needed.</p>
 
     <a href="{{ dashboard_url }}" class="button">Go to Dashboard</a>

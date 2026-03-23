@@ -46,6 +46,7 @@ async def get_media(
     search: Optional[str] = Query(None, description="Search by title"),
     limit: int = Query(20, le=100),
     offset: int = Query(0),
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
     """Get list of media attachments"""
@@ -61,6 +62,7 @@ async def get_media(
 @router.get("/{attachment_id}", tags=["Media"])
 async def get_media_item(
     attachment_id: int,
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
     """Get a single media attachment by ID"""

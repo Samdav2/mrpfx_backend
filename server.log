@@ -1,0 +1,581 @@
+nohup: ignoring input
+INFO:     Will watch for changes in these directories: ['/home/rehack/PycharmProjects/mrpfx-backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [197359] using WatchFiles
+INFO:     Started server process [197367]
+INFO:     Waiting for application startup.
+2026-03-20 19:34:27,268 - app.main - INFO - Starting MRFX...
+INFO:     Application startup complete.
+INFO:     127.0.0.1:55490 - "POST /api/v1/auth/login HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:47266 - "POST /api/v1/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47276 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47278 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47290 - "GET /api/v1/wordpress/learnpress/my-courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47302 - "GET /api/v1/wordpress/wc/my-orders/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47308 - "GET /api/v1/wordpress/wc/my-orders?skip=0&limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47320 - "GET /api/v1/wordpress/posts?status=publish&limit=4&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47324 - "GET /api/v1/prop-firm/registrations?limit=10&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47338 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47340 - "GET /api/v1/wordpress/learnpress/my-courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47350 - "GET /api/v1/wordpress/wc/my-orders/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47358 - "GET /api/v1/wordpress/wc/my-orders?skip=0&limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47386 - "GET /api/v1/prop-firm/registrations?limit=10&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47374 - "GET /api/v1/wordpress/posts?status=publish&limit=4&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43546 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35324 - "GET /api/v1/crypto-payments/estimate?amount=1200&from=usd&to=usdttrc20 HTTP/1.1" 422 Unprocessable Content
+INFO:     127.0.0.1:35332 - "GET /api/v1/crypto-payments/estimate?amount=1200&from=usd&to=usdttrc20 HTTP/1.1" 422 Unprocessable Content
+2026-03-20 19:36:09,888 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/currencies "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:35308 - "GET /api/v1/crypto-payments/currencies HTTP/1.1" 200 OK
+2026-03-20 19:36:10,715 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/currencies "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44372 - "GET /api/v1/crypto-payments/currencies HTTP/1.1" 200 OK
+2026-03-20 19:38:56,620 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/currencies "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56572 - "GET /api/v1/crypto-payments/currencies HTTP/1.1" 200 OK
+2026-03-20 19:38:56,646 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/estimate?amount=1200.0&currency_from=usd&currency_to=usdttrc20 "HTTP/1.1 400 Bad Request"
+INFO:     127.0.0.1:56586 - "GET /api/v1/crypto-payments/estimate?amount=1200&currency_from=usd&currency_to=usdttrc20 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/service/nowpayments_service.py", line 66, in _get
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '400 Bad Request' for url 'https://api.nowpayments.io/v1/estimate?amount=1200.0&currency_from=usd&currency_to=usdttrc20'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/applications.py", line 1134, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/gzip.py", line 29, in __call__
+    await responder(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/gzip.py", line 130, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/gzip.py", line 46, in __call__
+    await self.app(scope, receive, self.send_with_compression)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/trustedhost.py", line 36, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 125, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 111, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 391, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 290, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/slowapi/extension.py", line 734, in async_wrapper
+    response = await func(*args, **kwargs)  # type: ignore
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/v1/api/crypto_payments.py", line 76, in get_estimated_price
+    return await service.get_estimated_price(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/service/nowpayments_service.py", line 111, in get_estimated_price
+    return await self._get("estimate", params=params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/service/nowpayments_service.py", line 81, in _get
+    raise Exception(f"NOWPayments API error: {error_msg}")
+Exception: NOWPayments API error: Failed to get estimate amount. Can not get estimate from USD to USDTTRC20
+2026-03-20 19:38:58,498 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/currencies "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39180 - "GET /api/v1/crypto-payments/currencies HTTP/1.1" 200 OK
+2026-03-20 19:38:58,641 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/estimate?amount=1200.0&currency_from=usd&currency_to=usdttrc20 "HTTP/1.1 400 Bad Request"
+INFO:     127.0.0.1:39186 - "GET /api/v1/crypto-payments/estimate?amount=1200&currency_from=usd&currency_to=usdttrc20 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/service/nowpayments_service.py", line 66, in _get
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '400 Bad Request' for url 'https://api.nowpayments.io/v1/estimate?amount=1200.0&currency_from=usd&currency_to=usdttrc20'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/applications.py", line 1134, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/gzip.py", line 29, in __call__
+    await responder(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/gzip.py", line 130, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/gzip.py", line 46, in __call__
+    await self.app(scope, receive, self.send_with_compression)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/trustedhost.py", line 36, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 125, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 111, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 391, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 290, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/slowapi/extension.py", line 734, in async_wrapper
+    response = await func(*args, **kwargs)  # type: ignore
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/v1/api/crypto_payments.py", line 76, in get_estimated_price
+    return await service.get_estimated_price(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/service/nowpayments_service.py", line 111, in get_estimated_price
+    return await self._get("estimate", params=params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/service/nowpayments_service.py", line 81, in _get
+    raise Exception(f"NOWPayments API error: {error_msg}")
+Exception: NOWPayments API error: Failed to get estimate amount. Can not get estimate from USD to USDTTRC20
+INFO:     127.0.0.1:49460 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+2026-03-20 19:40:19,947 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/currencies "HTTP/1.1 200 OK"
+2026-03-20 19:40:19,950 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/estimate?amount=1200.0&currency_from=usd&currency_to=usdttrc20 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49862 - "GET /api/v1/crypto-payments/currencies HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49874 - "GET /api/v1/crypto-payments/estimate?amount=1200&currency_from=usd&currency_to=usdttrc20 HTTP/1.1" 200 OK
+2026-03-20 19:40:20,767 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/currencies "HTTP/1.1 200 OK"
+2026-03-20 19:40:20,768 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/estimate?amount=1200.0&currency_from=usd&currency_to=usdttrc20 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49876 - "GET /api/v1/crypto-payments/currencies HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49882 - "GET /api/v1/crypto-payments/estimate?amount=1200&currency_from=usd&currency_to=usdttrc20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39704 - "POST /api/v1/prop-firm/register HTTP/1.1" 201 Created
+2026-03-20 19:40:30,393 - httpx - INFO - HTTP Request: POST https://api.nowpayments.io/v1/payment "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:39720 - "POST /api/v1/crypto-payments/payment HTTP/1.1" 200 OK
+2026-03-20 19:41:01,407 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:43844 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:41:38,505 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:38592 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:42:03,479 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:50826 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:42:31,436 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:51306 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:43:02,018 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:36366 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:43:32,073 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:42988 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39306 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno -2] Name or service not known
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/service/nowpayments_service.py", line 61, in _get
+    response = await client.get(
+               ^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_client.py", line 1768, in get
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/rehack/anaconda3/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/v1/api/crypto_payments.py", line 126, in get_payment_status
+    api_status_data = await service.get_payment_status(payment_id)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/service/nowpayments_service.py", line 195, in get_payment_status
+    return await self._get(f"payment/{payment_id}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/service/nowpayments_service.py", line 83, in _get
+    raise Exception(f"NOWPayments API connection error: {str(e)}")
+Exception: NOWPayments API connection error: [Errno -2] Name or service not known
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/applications.py", line 1134, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/gzip.py", line 29, in __call__
+    await responder(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/gzip.py", line 130, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/gzip.py", line 46, in __call__
+    await self.app(scope, receive, self.send_with_compression)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/trustedhost.py", line 36, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 125, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 111, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 391, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/rehack/anaconda3/lib/python3.13/site-packages/fastapi/routing.py", line 290, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rehack/PycharmProjects/mrpfx-backend/app/v1/api/crypto_payments.py", line 146, in get_payment_status
+    from app.core.logging_config import logger
+ModuleNotFoundError: No module named 'app.core.logging_config'
+2026-03-20 19:44:36,257 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:46938 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:45:01,272 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:59214 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:45:31,412 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37858 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:46:01,466 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39736 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:46:31,897 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53992 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:47:01,389 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57746 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:47:31,602 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40372 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:48:01,239 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:41242 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:48:31,399 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54638 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:49:01,300 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:47470 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:49:31,410 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37638 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:50:06,428 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57744 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:50:31,312 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49616 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:51:01,164 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53374 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:51:37,669 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:36662 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:52:01,248 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60188 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:52:31,512 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37638 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:53:01,238 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:50228 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:53:31,335 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53198 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'app/service/nowpayments_service.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-03-20 19:53:44,985 - app.main - INFO - Shutting down MRFX...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [197367]
+INFO:     Started server process [216432]
+INFO:     Waiting for application startup.
+2026-03-20 19:53:48,375 - app.main - INFO - Starting MRFX...
+INFO:     Application startup complete.
+2026-03-20 19:54:01,514 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:46708 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'app/core/logging_config.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-03-20 19:54:11,265 - app.main - INFO - Shutting down MRFX...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [216432]
+WARNING:  WatchFiles detected changes in 'verify_id_fix.py'. Reloading...
+INFO:     Started server process [217022]
+INFO:     Waiting for application startup.
+2026-03-20 19:54:14,253 - app.main - INFO - Starting MRFX...
+INFO:     Application startup complete.
+INFO:     Started server process [217081]
+INFO:     Waiting for application startup.
+2026-03-20 19:54:17,119 - app.main - INFO - Starting MRFX...
+INFO:     Application startup complete.
+2026-03-20 19:54:31,581 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39728 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:55:01,345 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37272 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'verify_id_fix.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-03-20 19:55:04,157 - app.main - INFO - Shutting down MRFX...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [217081]
+INFO:     Started server process [217725]
+INFO:     Waiting for application startup.
+2026-03-20 19:55:07,012 - app.main - INFO - Starting MRFX...
+INFO:     Application startup complete.
+2026-03-20 19:55:31,658 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44734 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'verify_id_fix.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-03-20 19:55:37,456 - app.main - INFO - Shutting down MRFX...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [217725]
+INFO:     Started server process [218126]
+INFO:     Waiting for application startup.
+2026-03-20 19:55:40,789 - app.main - INFO - Starting MRFX...
+INFO:     Application startup complete.
+2026-03-20 19:56:02,087 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:48310 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+2026-03-20 19:56:17,327 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/4317953019 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39648 - "GET /api/v1/crypto-payments/payment/4317953019/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40990 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+2026-03-20 19:57:02,384 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/currencies "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:33964 - "GET /api/v1/crypto-payments/currencies HTTP/1.1" 200 OK
+2026-03-20 19:57:02,389 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/estimate?amount=2500.0&currency_from=usd&currency_to=usdttrc20 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:33978 - "GET /api/v1/crypto-payments/estimate?amount=2500&currency_from=usd&currency_to=usdttrc20 HTTP/1.1" 200 OK
+2026-03-20 19:57:03,101 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/currencies "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:33982 - "GET /api/v1/crypto-payments/currencies HTTP/1.1" 200 OK
+2026-03-20 19:57:03,204 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/estimate?amount=2500.0&currency_from=usd&currency_to=usdttrc20 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:33988 - "GET /api/v1/crypto-payments/estimate?amount=2500&currency_from=usd&currency_to=usdttrc20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36248 - "POST /api/v1/prop-firm/register HTTP/1.1" 201 Created
+2026-03-20 19:57:18,615 - mrpfx-backend - INFO - Sanitizing order_id: 'PROP-undefined' -> 'FTMO-08932' for user 9
+2026-03-20 19:57:20,304 - httpx - INFO - HTTP Request: POST https://api.nowpayments.io/v1/payment "HTTP/1.1 201 Created"
+INFO:     127.0.0.1:36258 - "POST /api/v1/crypto-payments/payment HTTP/1.1" 200 OK
+2026-03-20 19:57:52,872 - httpx - INFO - HTTP Request: GET https://api.nowpayments.io/v1/payment/5864022185 "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:35824 - "GET /api/v1/crypto-payments/payment/5864022185/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52014 - "GET /api/v1/videos/trading?limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52036 - "GET /api/v1/wordpress/wc/products/slug/vip-membership HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52024 - "GET /api/v1/signals?type=vip&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52046 - "GET /api/v1/wordpress/wc/products/slug/vip-membership HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52040 - "GET /api/v1/videos/trading?limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52048 - "GET /api/v1/signals?type=vip&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35526 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35536 - "GET /api/v1/signals?type=vip&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35546 - "GET /api/v1/wordpress/wc/products/slug/vip-membership HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:35532 - "GET /api/v1/videos/trading?limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39128 - "GET /api/v1/auth/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:39152 - "GET /api/v1/wordpress/wc/products/slug/vip-membership HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:39132 - "GET /api/v1/videos/trading?limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39138 - "GET /api/v1/signals?type=vip&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39162 - "POST /api/v1/auth/refresh HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39164 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33026 - "POST /api/v1/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33036 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33044 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33058 - "GET /api/v1/wordpress/learnpress/my-courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33070 - "GET /api/v1/wordpress/wc/my-orders/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33090 - "GET /api/v1/prop-firm/registrations?limit=10&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33072 - "GET /api/v1/wordpress/wc/my-orders?skip=0&limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33080 - "GET /api/v1/wordpress/posts?status=publish&limit=4&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33092 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33112 - "GET /api/v1/wordpress/wc/my-orders/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33108 - "GET /api/v1/wordpress/learnpress/my-courses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33124 - "GET /api/v1/wordpress/wc/my-orders?skip=0&limit=5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33142 - "GET /api/v1/prop-firm/registrations?limit=10&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33130 - "GET /api/v1/wordpress/posts?status=publish&limit=4&offset=0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33166 - "GET /api/v1/wordpress/wc/products/slug/vip-membership HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33152 - "GET /api/v1/videos/trading?limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33176 - "GET /api/v1/wordpress/wc/products/slug/vip-membership HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:33158 - "GET /api/v1/signals?type=vip&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33188 - "GET /api/v1/videos/trading?limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33196 - "GET /api/v1/signals?type=vip&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55914 - "POST /api/v1/auth/admin/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55916 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55936 - "GET /api/v1/wordpress/users?per_page=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55938 - "GET /api/v1/wordpress/wc/orders?limit=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55940 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55942 - "GET /api/v1/wordpress/users?per_page=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55948 - "GET /api/v1/wordpress/wc/orders?limit=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55928 - "GET /api/v1/admin/learnpress/courses?limit=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55950 - "GET /api/v1/admin/learnpress/courses?limit=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42114 - "GET /api/v1/wordpress/users?per_page=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42128 - "GET /api/v1/wordpress/wc/orders?limit=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42110 - "GET /api/v1/admin/learnpress/courses?limit=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42140 - "GET /api/v1/wordpress/users?per_page=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42154 - "GET /api/v1/wordpress/wc/orders?limit=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42168 - "GET /api/v1/admin/learnpress/courses?limit=500 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60956 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60968 - "GET /api/v1/wordpress/wc/products/slug/vip-membership HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60960 - "GET /api/v1/videos/trading?limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60974 - "GET /api/v1/signals?type=vip&limit=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56378 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39272 - "GET /api/v1/wordpress/wc/cart HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39282 - "GET /api/v1/wordpress/wc/cart HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58948 - "GET /api/v1/wordpress/wc/cart HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58962 - "GET /api/v1/wordpress/wc/cart HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56676 - "GET /api/v1/wordpress/wc/products/slug/standard-mentorship HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-03-20 20:13:58,272 - app.main - INFO - Shutting down MRFX...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [218126]
+INFO:     Stopping reloader process [197359]

@@ -17,6 +17,7 @@ class WCCartItem(BaseModel):
     product_price: Optional[Decimal] = Field(None, description="Unit price")
     line_total: Optional[Decimal] = Field(None, description="Total for this line item")
     product_image: Optional[str] = Field(None, description="Product thumbnail URL")
+    custom_fields: Optional[Dict[str, str]] = Field(None, description="Custom field values for this item")
 
     class Config:
         from_attributes = True

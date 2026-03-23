@@ -364,3 +364,203 @@ async def send_admin_new_order_notification(
     """
 
     return await send_email(admin_email, subject, html_content, text_content)
+
+
+async def send_propfirm_status_update_email(
+    email: str,
+    username: str,
+    order_id: str,
+    status: str
+) -> bool:
+    """
+    Send notification to user when their Prop Firm registration status changes.
+    """
+    subject = f"Prop Firm Registration Update: {order_id} - {settings.APP_NAME}"
+
+    html_content = render_template(
+        "email/propfirm_status_update.html",
+        username=username,
+        order_id=order_id,
+        status=status.upper(),
+        dashboard_url=f"{settings.FRONTEND_URL}/dashboard"
+    )
+
+    text_content = f"""
+    Prop Firm Registration Update
+
+    Hello {username},
+
+    The status of your Prop Firm registration ({order_id}) has been updated to: {status.upper()}.
+
+    You can check the progress in your dashboard:
+    {settings.FRONTEND_URL}/dashboard
+    """
+
+    return await send_email(email, subject, html_content, text_content)
+
+
+async def send_admin_propfirm_status_update_notification(
+    admin_email: str,
+    username: str,
+    user_email: str,
+    order_id: str,
+    status: str
+) -> bool:
+    """
+    Notify admin when a Prop Firm registration status is updated.
+    """
+    subject = f"Prop Firm Update: {order_id} ({status.upper()}) - {settings.APP_NAME}"
+
+    html_content = render_template(
+        "email/admin_propfirm_status_update.html",
+        username=username,
+        user_email=user_email,
+        order_id=order_id,
+        status=status.upper(),
+        update_date=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        admin_dashboard_url=f"{settings.FRONTEND_URL}/admin/prop-firm/registrations"
+    )
+
+    text_content = f"""
+    Prop Firm Registration Updated
+
+    User: {username} ({user_email})
+    Order ID: {order_id}
+    New Status: {status.upper()}
+    """
+
+    return await send_email(admin_email, subject, html_content, text_content)
+
+async def send_account_mgmt_status_update_email(
+    email: str,
+    username: str,
+    account_id: str,
+    status: str
+) -> bool:
+    """
+    Send notification to user when their Account Management connection status changes.
+    """
+    subject = f"Account Management Update: {account_id} - {settings.APP_NAME}"
+
+    html_content = render_template(
+        "email/account_mgmt_status_update.html",
+        username=username,
+        account_id=account_id,
+        status=status.upper(),
+        dashboard_url=f"{settings.FRONTEND_URL}/dashboard"
+    )
+
+    text_content = f"""
+    Account Management Update
+
+    Hello {username},
+
+    The status of your MT5 Account Management connection ({account_id}) has been updated to: {status.upper()}.
+
+    You can check the progress in your dashboard:
+    {settings.FRONTEND_URL}/dashboard
+    """
+
+    return await send_email(email, subject, html_content, text_content)
+
+
+async def send_admin_account_mgmt_connection_notification(
+    admin_email: str,
+    username: str,
+    user_email: str,
+    account_id: str,
+    capital: float,
+    status: str
+) -> bool:
+    """
+    Notify admin when an Account Management connection is created or updated.
+    """
+    subject = f"Account Management Connection: {account_id} ({status.upper()}) - {settings.APP_NAME}"
+
+    html_content = render_template(
+        "email/admin_account_mgmt_status_update.html",
+        username=username,
+        user_email=user_email,
+        account_id=account_id,
+        capital=capital,
+        status=status.upper(),
+        update_date=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        admin_dashboard_url=f"{settings.FRONTEND_URL}/admin/account-management/connections"
+    )
+
+    text_content = f"""
+    Account Management Connection Updated
+
+    User: {username} ({user_email})
+    Account ID: {account_id}
+    Capital: ${capital}
+    New Status: {status.upper()}
+    """
+
+    return await send_email(admin_email, subject, html_content, text_content)
+
+
+async def send_copy_trading_status_update_email(
+    email: str,
+    username: str,
+    account_id: str,
+    status: str
+) -> bool:
+    """
+    Send notification to user when their Copy Trading connection status changes.
+    """
+    subject = f"Copy Trading Update: {account_id} - {settings.APP_NAME}"
+
+    html_content = render_template(
+        "email/copy_trading_status_update.html",
+        username=username,
+        account_id=account_id,
+        status=status.upper(),
+        dashboard_url=f"{settings.FRONTEND_URL}/dashboard"
+    )
+
+    text_content = f"""
+    Copy Trading Update
+
+    Hello {username},
+
+    The status of your MT5 Copy Trading connection ({account_id}) has been updated to: {status.upper()}.
+
+    You can check the progress in your dashboard:
+    {settings.FRONTEND_URL}/dashboard
+    """
+
+    return await send_email(email, subject, html_content, text_content)
+
+
+async def send_admin_copy_trading_connection_notification(
+    admin_email: str,
+    username: str,
+    user_email: str,
+    account_id: str,
+    status: str
+) -> bool:
+    """
+    Notify admin when a Copy Trading connection is created or updated.
+    """
+    subject = f"Copy Trading Connection: {account_id} ({status.upper()}) - {settings.APP_NAME}"
+
+    html_content = render_template(
+        "email/admin_copy_trading_status_update.html",
+        username=username,
+        user_email=user_email,
+        account_id=account_id,
+        status=status.upper(),
+        update_date=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        admin_dashboard_url=f"{settings.FRONTEND_URL}/admin/copy-trading"
+    )
+
+    text_content = f"""
+    Copy Trading Connection Updated
+
+    User: {username} ({user_email})
+    Account ID: {account_id}
+    New Status: {status.upper()}
+    """
+
+    return await send_email(admin_email, subject, html_content, text_content)

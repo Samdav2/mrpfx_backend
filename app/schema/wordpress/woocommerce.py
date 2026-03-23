@@ -172,6 +172,9 @@ class WCProductBase(BaseModel):
     downloadable: Optional[bool] = Field(False, description="Is downloadable")
     seller_payment_link: Optional[str] = Field(None, description="External seller payment link")
     whop_payment_link: Optional[str] = Field(None, description="Whop payment link")
+    signal_link: Optional[str] = Field(None, description="Signal access link")
+    telegram_link: Optional[str] = Field(None, description="Telegram group link")
+    vip_group: Optional[str] = Field(None, description="VIP group name/link")
 
 
 class WCProductCreate(WCProductBase):
@@ -206,6 +209,10 @@ class WCProductUpdate(BaseModel):
     dimensions: Optional[WCProductDimensions] = None
     seller_payment_link: Optional[str] = None
     whop_payment_link: Optional[str] = None
+    signal_link: Optional[str] = None
+    telegram_link: Optional[str] = None
+    vip_group: Optional[str] = None
+    addons: Optional[List[WCProductAddonField]] = None
 
 
 class WCProductRead(WCProductBase):
@@ -290,6 +297,7 @@ class WCOrderItemRead(BaseModel):
     product_id: Optional[int] = None
     quantity: Optional[int] = None
     line_total: Optional[Decimal] = None
+    meta: Optional[Dict[str, str]] = None
 
     class Config:
         from_attributes = True

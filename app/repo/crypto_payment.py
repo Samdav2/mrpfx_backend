@@ -19,20 +19,20 @@ class CryptoPaymentRepository:
     async def get_by_payment_id(self, payment_id: str) -> Optional[CryptoPayment]:
         """Get a crypto payment by its external provider payment ID."""
         statement = select(self.model_class).where(self.model_class.payment_id == payment_id)
-        result = await self.session.execute(statement)
-        return result.scalar_one_or_none()
+        result = await self.session.exec(statement)
+        return result.first()
 
     async def get_by_invoice_id(self, invoice_id: str) -> Optional[CryptoPayment]:
         """Get a crypto payment by its external provider invoice ID."""
         statement = select(self.model_class).where(self.model_class.invoice_id == invoice_id)
-        result = await self.session.execute(statement)
-        return result.scalar_one_or_none()
+        result = await self.session.exec(statement)
+        return result.first()
 
     async def get_by_user(self, user_id: int) -> List[CryptoPayment]:
         """Get all crypto payments for a specific user."""
         statement = select(self.model_class).where(self.model_class.user_id == user_id)
-        result = await self.session.execute(statement)
-        return list(result.scalars().all())
+        result = await self.session.exec(statement)
+        return list(result.all())
 
     async def create(self, obj_in: dict) -> CryptoPayment:
         """Create a new crypto payment record."""

@@ -41,6 +41,45 @@ class WCOrderRepository:
         result = await self.session.exec(statement)
         return result.all()
 
+    async def get_user_digital_assets(self, user_id: int) -> List[WCProductRead]:
+        """Get all products with access links from a user's completed orders"""
+        # 1. Get all completed orders for the user
+        stmt_orders = select(WCOrder.id).where(
+            WCOrder.customer_id == user_id,
+            WCOrder.status == "completed"
+        )
+        result_orders = await self.session.exec(stmt_orders)
+        order_ids = result_orders.all()
+        if not order_ids:
+            return []
+
+        # 2. Get all order items for those orders to extract product IDs
+        stmt_assets = (
+            select(WCOrderItemMeta.meta_value)
+            .join(WCOrderItem, WCOrderItem.order_item_id == WCOrderItemMeta.order_item_id)
+            .where(
+                WCOrderItem.order_id.in_(order_ids),
+                WCOrderItemMeta.meta_key == "_product_id"
+            )
+            .distinct()
+        )
+        result_assets = await self.session.exec(stmt_assets)
+        product_ids = [int(val) for val in result_assets.all() if val and str(val).isdigit()]
+
+        if not product_ids:
+            return []
+
+        # 3. Fetch product details and filter for those with access links
+        from app.repo.wordpress.woocommerce import WCProductRepository
+        product_repo = WCProductRepository(self.session)
+        digital_assets = []
+        for pid in product_ids:
+            p = await product_repo.get_product(pid)
+            if p and (p.telegram_link or p.signal_link or p.vip_group):
+                digital_assets.append(p)
+
+        return digital_assets
+
     async def get_order_full(self, order_id: int) -> Optional[WCOrderFull]:
         """Get order with all related data (addresses, items)"""
         order = await self.session.get(WCOrder, order_id)
@@ -93,7 +132,8 @@ class WCOrderRepository:
                     order_id=item.order_id,
                     product_id=int(meta_data.get("_product_id", 0)) if meta_data.get("_product_id") else None,
                     quantity=int(meta_data.get("_qty", 0)) if meta_data.get("_qty") else None,
-                    line_total=Decimal(meta_data.get("_line_total", "0.00")) if meta_data.get("_line_total") else None
+                    line_total=Decimal(meta_data.get("_line_total", "0.00")) if meta_data.get("_line_total") else None,
+                    meta={k: v for k, v in meta_data.items() if not k.startswith("_") or k == "telegram_username"} # Include custom fields
                 )
             )
 
@@ -193,7 +233,7 @@ class WCProductRepository:
         """Get a product by ID with full metadata"""
         statement = select(WPPost).where(
             WPPost.ID == product_id,
-            WPPost.post_type == "product"
+            WPPost.post_type.in_(["product", "signal", "trading_tool", "forex_book"])
         )
         result = await self.session.exec(statement)
         post = result.first()
@@ -212,7 +252,12 @@ class WCProductRepository:
         meta_keys = [
             "_price", "_regular_price", "_sale_price", "_sku",
             "_weight", "_length", "_width", "_height", "_manage_stock",
-            "_seller_payment_link", "_whop_payment_link"
+            "_seller_payment_link", "_whop_payment_link",
+            "_selar_url", "selar_url", "_whop_url", "whop_url",
+            "_signal_link", "signal_link", "_telegram_link", "telegram_link", "_vip_group", "vip_group",
+            # Dynamic content meta
+            "_signal_price", "_tool_price", "_book_price",
+            "_signal_category", "_tool_category", "_book_is_free"
         ]
         price_stmt = select(WPPostMeta).where(
             WPPostMeta.post_id == product_id,
@@ -237,9 +282,9 @@ class WCProductRepository:
             short_description=post.post_excerpt,
             status=post.post_status,
             sku=post_meta.get("_sku", meta.sku if meta else ""),
-            price=Decimal(post_meta.get("_price", "0")) if post_meta.get("_price") else None,
-            regular_price=Decimal(post_meta.get("_regular_price", "0")) if post_meta.get("_regular_price") else None,
-            sale_price=Decimal(post_meta.get("_sale_price", "0")) if post_meta.get("_sale_price") else None,
+            price=Decimal(post_meta.get("_sale_price") or post_meta.get("_price") or post_meta.get("_signal_price") or post_meta.get("_tool_price") or post_meta.get("_book_price") or "0"),
+            regular_price=Decimal(post_meta.get("_regular_price") or post_meta.get("_price") or "0"),
+            sale_price=Decimal(post_meta.get("_sale_price") or "0") if post_meta.get("_sale_price") else None,
             manage_stock=post_meta.get("_manage_stock") == "yes",
             stock_quantity=int(meta.stock_quantity) if meta and meta.stock_quantity is not None else None,
             stock_status=meta.stock_status if meta else "instock",
@@ -249,8 +294,8 @@ class WCProductRepository:
                 width=post_meta.get("_width"),
                 height=post_meta.get("_height")
             ),
-            virtual=meta.virtual if meta else False,
-            downloadable=meta.downloadable if meta else False,
+            virtual=meta.virtual if meta else True, # Default to True for dynamic content
+            downloadable=meta.downloadable if meta else True,
             date_created=post.post_date,
             date_modified=post.post_modified,
             average_rating=meta.average_rating if meta else None,
@@ -258,8 +303,11 @@ class WCProductRepository:
             total_sales=meta.total_sales if meta else 0,
             categories=categories,
             tags=tags,
-            seller_payment_link=post_meta.get("_seller_payment_link"),
-            whop_payment_link=post_meta.get("_whop_payment_link")
+            seller_payment_link=post_meta.get("_seller_payment_link") or post_meta.get("selar_url") or post_meta.get("_selar_url"),
+            whop_payment_link=post_meta.get("_whop_payment_link") or post_meta.get("whop_url") or post_meta.get("_whop_url"),
+            signal_link=post_meta.get("_signal_link") or post_meta.get("signal_link"),
+            telegram_link=post_meta.get("_telegram_link") or post_meta.get("telegram_link"),
+            vip_group=post_meta.get("_vip_group") or post_meta.get("vip_group")
         )
 
         # Attach images
@@ -287,7 +335,7 @@ class WCProductRepository:
 
         statement = select(WPPost).where(
             or_(*[WPPost.post_name == v for v in slug_variants]),
-            WPPost.post_type == "product",
+            WPPost.post_type.in_(["product", "signal", "trading_tool", "forex_book"]),
             WPPost.post_status == "publish"
         )
         result = await self.session.exec(statement)
@@ -297,11 +345,23 @@ class WCProductRepository:
         return await self.get_product(post.ID)
 
     async def get_product_type(self, product_id: int) -> str:
-        """Get product type from taxonomy"""
+        """Get product type from taxonomy, with fallback variation detection"""
         terms = await self._get_product_terms(product_id, "product_type")
-        if terms:
-            return terms[0]["slug"].replace("variable", "variable") # usually simple, variable, grouped, external
-        return "simple"
+        taxonomy_type = terms[0]["slug"] if terms else "simple"
+
+        # If taxonomy says "simple", double-check for variation children
+        # (some WP sites have mismatched taxonomy but real variations)
+        if taxonomy_type == "simple":
+            var_stmt = select(WPPost.ID).where(
+                WPPost.post_parent == product_id,
+                WPPost.post_type == "product_variation",
+                WPPost.post_status == "publish"
+            ).limit(1)
+            result = await self.session.exec(var_stmt)
+            if result.first():
+                return "variable"
+
+        return taxonomy_type
 
     async def get_product_categories(self, product_id: int) -> List[WCProductCategoryRead]:
         """Get product categories"""
@@ -430,46 +490,352 @@ class WCProductRepository:
         return variations
 
     async def get_product_full(self, product_id: int) -> Optional[WCProductFullRead]:
-        """Get product with all details (categories, tags, attributes, variations, related)"""
-        product = await self.get_product(product_id)
-        if not product:
+        """Get product with all details — OPTIMIZED: ~4 DB queries instead of 15+"""
+        import phpserialize
+        import json
+
+        # ── Query 1: Get the product post ──
+        post_stmt = select(WPPost).where(
+            WPPost.ID == product_id,
+            WPPost.post_type.in_(["product", "signal", "trading_tool", "forex_book"])
+        )
+        post_result = await self.session.exec(post_stmt)
+        post = post_result.first()
+        if not post:
             return None
 
-        attributes = await self.get_product_attributes(product_id)
-        variations = await self.get_product_variations(product_id)
-        # We always check for variations to be resilient, but attributes are primary
-
-        # Get related ids
-        stmt = select(WPPostMeta).where(
-            WPPostMeta.post_id == product_id,
-            WPPostMeta.meta_key.in_(["_crosssell_ids", "_upsell_ids"])
+        # ── Query 2: Get ALL postmeta in one shot ──
+        all_meta_stmt = select(WPPostMeta).where(
+            WPPostMeta.post_id == product_id
         )
-        result = await self.session.exec(stmt)
-        meta = {m.meta_key: m.meta_value for m in result.all()}
+        all_meta_result = await self.session.exec(all_meta_stmt)
+        all_meta_rows = all_meta_result.all()
+        # Build dict (some keys may have multiple values, use first occurrence)
+        post_meta = {}
+        for m in all_meta_rows:
+            if m.meta_key not in post_meta:
+                post_meta[m.meta_key] = m.meta_value
 
+        # ── Query 3: Get ALL taxonomy terms (type + categories + tags) in one query ──
+        terms_stmt = (
+            select(WPTerm, WPTermTaxonomy)
+            .join(WPTermTaxonomy, WPTerm.term_id == WPTermTaxonomy.term_id)
+            .join(WPTermRelationship, WPTermTaxonomy.term_taxonomy_id == WPTermRelationship.term_taxonomy_id)
+            .where(WPTermRelationship.object_id == product_id)
+        )
+        terms_result = await self.session.exec(terms_stmt)
+        all_terms = terms_result.all()
+
+        # Separate by taxonomy type
+        product_type = "simple"
+        categories = []
+        tags = []
+        for term, tax in all_terms:
+            if tax.taxonomy == "product_type":
+                product_type = term.slug
+            elif tax.taxonomy == "product_cat":
+                categories.append(WCProductCategoryRead(
+                    id=term.term_id, name=term.name, slug=term.slug,
+                    description=tax.description, parent=tax.parent, count=tax.count
+                ))
+            elif tax.taxonomy == "product_tag":
+                tags.append(WCProductTagRead(
+                    id=term.term_id, name=term.name, slug=term.slug,
+                    description=tax.description, count=tax.count
+                ))
+
+        # ── Query 4: Get product_meta_lookup ──
+        meta_lookup_stmt = select(WCProductMetaLookup).where(
+            WCProductMetaLookup.product_id == product_id
+        )
+        meta_lookup_result = await self.session.exec(meta_lookup_stmt)
+        meta = meta_lookup_result.first()
+
+        # ── Query 5: Get variations + their meta (2 queries batched) ──
+        var_stmt = select(WPPost).where(
+            WPPost.post_parent == product_id,
+            WPPost.post_type == "product_variation",
+            WPPost.post_status == "publish"
+        )
+        var_result = await self.session.exec(var_stmt)
+        var_posts = var_result.all()
+
+        variations = []
+        if var_posts:
+            # If taxonomy says "simple" but has variations, override
+            if product_type == "simple":
+                product_type = "variable"
+
+            # Batch-fetch ALL variation meta in one query
+            var_ids = [v.ID for v in var_posts]
+            var_meta_stmt = select(WPPostMeta).where(
+                WPPostMeta.post_id.in_(var_ids)
+            )
+            var_meta_result = await self.session.exec(var_meta_stmt)
+            var_meta_all = var_meta_result.all()
+
+            # Group meta by variation post_id
+            var_meta_map = {}
+            for vm in var_meta_all:
+                if vm.post_id not in var_meta_map:
+                    var_meta_map[vm.post_id] = {}
+                var_meta_map[vm.post_id][vm.meta_key] = vm.meta_value
+
+            for vp in var_posts:
+                vm = var_meta_map.get(vp.ID, {})
+                variation_attrs = []
+                for key, val in vm.items():
+                    if key.startswith("attribute_"):
+                        attr_name = key.replace("attribute_", "")
+                        variation_attrs.append({"name": attr_name, "option": val})
+
+                variations.append(WCProductVariationRead(
+                    id=vp.ID,
+                    sku=vm.get("_sku"),
+                    price=Decimal(vm.get("_price", "0")) if vm.get("_price") else None,
+                    regular_price=Decimal(vm.get("_regular_price", "0")) if vm.get("_regular_price") else None,
+                    sale_price=Decimal(vm.get("_sale_price", "0")) if vm.get("_sale_price") else None,
+                    stock_quantity=int(vm.get("_stock")) if vm.get("_stock") else None,
+                    stock_status=vm.get("_stock_status", "instock"),
+                    manage_stock=vm.get("_manage_stock") == "yes",
+                    weight=vm.get("_weight"),
+                    dimensions=WCProductDimensions(
+                        length=vm.get("_length"),
+                        width=vm.get("_width"),
+                        height=vm.get("_height")
+                    ),
+                    attributes=variation_attrs,
+                    date_created=vp.post_date,
+                    date_modified=vp.post_modified,
+                    description=vp.post_content,
+                    status=vp.post_status
+                ))
+        elif product_type == "simple":
+            # Double-check for variation children (handles taxonomy mismatch)
+            var_check = select(WPPost.ID).where(
+                WPPost.post_parent == product_id,
+                WPPost.post_type == "product_variation",
+                WPPost.post_status == "publish"
+            ).limit(1)
+            chk = await self.session.exec(var_check)
+            if chk.first():
+                product_type = "variable"
+
+        # ── Build attributes from postmeta (already fetched) ──
+        attributes = []
+        raw_attrs = post_meta.get("_product_attributes")
+        if raw_attrs:
+            try:
+                attr_data = phpserialize.loads(raw_attrs.encode(), decode_strings=True)
+                for attr_slug, attr_info in attr_data.items():
+                    is_taxonomy = bool(attr_info.get('is_taxonomy', 0))
+                    name = attr_info.get('name', attr_slug)
+                    options = []
+                    if is_taxonomy:
+                        # Get options from terms already fetched or do a targeted query
+                        for term, tax in all_terms:
+                            if tax.taxonomy == name:
+                                options.append(term.name)
+                        if not options:
+                            # Fallback: query taxonomy terms
+                            t_terms = await self._get_product_terms(product_id, name)
+                            options = [t['name'] for t in t_terms]
+                    else:
+                        value = attr_info.get('value', '')
+                        options = [o.strip() for o in value.split('|') if o.strip()]
+
+                    attributes.append(WCProductAttributeRead(
+                        id=0, name=name, slug=attr_slug if is_taxonomy else None,
+                        position=int(attr_info.get('position', 0)),
+                        visible=bool(attr_info.get('is_visible', 1)),
+                        variation=bool(attr_info.get('is_variation', 0)),
+                        options=options
+                    ))
+            except Exception:
+                pass
+
+        # ── Build addons from postmeta (already fetched) ──
+        addons = []
+
+        # 1) Official WooCommerce Product Add-Ons: fields stored inline
+        official_raw = post_meta.get("_product_addons")
+        if official_raw:
+            try:
+                addon_data = json.loads(official_raw)
+            except (json.JSONDecodeError, ValueError):
+                try:
+                    addon_data = phpserialize.loads(official_raw.encode(), decode_strings=True)
+                    if isinstance(addon_data, dict):
+                        addon_data = list(addon_data.values())
+                except Exception:
+                    addon_data = None
+            if isinstance(addon_data, list):
+                for i, ad in enumerate(addon_data):
+                    if isinstance(ad, dict):
+                        options = ad.get("options", [])
+                        if isinstance(options, list) and options and isinstance(options[0], dict):
+                            options = [o.get("label", o.get("value", "")) for o in options]
+                        addons.append(WCProductAddonField(
+                            name=ad.get("name") or ad.get("label") or ad.get("field_name") or f"Field {i}",
+                            type=ad.get("type") or ad.get("field_type") or "text",
+                            required=bool(ad.get("required", False)),
+                            placeholder=ad.get("placeholder"),
+                            description=ad.get("description"),
+                            options=options if isinstance(options, list) else [],
+                            position=int(ad.get("position", i)),
+                            max_length=int(ad.get("max_length")) if ad.get("max_length") else None
+                        ))
+
+        # 2) WCPA (Acowebs) plugin: _wcpa_product_meta contains form post IDs,
+        #    actual field definitions are in _wcpa_fb-editor-data on those form posts
+        wcpa_raw = post_meta.get("_wcpa_product_meta")
+        if wcpa_raw:
+            form_ids = []
+            try:
+                wcpa_data = phpserialize.loads(wcpa_raw.encode(), decode_strings=True)
+                if isinstance(wcpa_data, dict):
+                    form_ids = [int(v) for v in wcpa_data.values()]
+                elif isinstance(wcpa_data, list):
+                    form_ids = [int(v) for v in wcpa_data]
+            except Exception:
+                pass
+
+            if form_ids:
+                # Fetch the form editor data from the WCPA form posts
+                form_meta_stmt = select(WPPostMeta).where(
+                    WPPostMeta.post_id.in_(form_ids),
+                    WPPostMeta.meta_key == "_wcpa_fb-editor-data"
+                )
+                form_meta_result = await self.session.exec(form_meta_stmt)
+                for fm in form_meta_result.all():
+                    if not fm.meta_value:
+                        continue
+                    try:
+                        fields = json.loads(fm.meta_value)
+                    except (json.JSONDecodeError, ValueError):
+                        continue
+                    if not isinstance(fields, list):
+                        continue
+                    for i, field in enumerate(fields):
+                        if not isinstance(field, dict):
+                            continue
+                        # WCPA radio-group stores options as "values" [{label, value}]
+                        options = field.get("options", [])
+                        if not options:
+                            values = field.get("values", [])
+                            if values and isinstance(values, list):
+                                options = [v.get("label", v.get("value", "")) for v in values if isinstance(v, dict)]
+                        addons.append(WCProductAddonField(
+                            name=field.get("label") or field.get("name") or f"Field {i}",
+                            type=field.get("type") or "text",
+                            required=bool(field.get("required", False)),
+                            placeholder=field.get("placeholder"),
+                            description=field.get("description"),
+                            options=options if isinstance(options, list) else [],
+                            position=int(field.get("position", i)),
+                            max_length=int(field.get("maxlength")) if field.get("maxlength") else None
+                        ))
+
+        # ── Build related/upsell/cross-sell from postmeta (already fetched) ──
         def parse_ids(val):
-            import phpserialize
             if not val: return []
             try:
-                # Often stored as serialized array
                 decoded = phpserialize.loads(val.encode(), decode_strings=True)
                 if isinstance(decoded, dict):
                     return [int(v) for v in decoded.values()]
                 return [int(i) for i in decoded] if isinstance(decoded, list) else []
             except Exception:
-                # Or sometimes comma-separated
                 return [int(i.strip()) for i in val.split(",") if i.strip()]
 
-        # Get custom addon fields
-        addons = await self.get_product_addons(product_id)
+        # ── Build featured image (one extra query only if thumbnail exists) ──
+        featured_image = None
+        gallery_images = []
+        thumb_id_str = post_meta.get("_thumbnail_id")
+        gallery_str = post_meta.get("_product_image_gallery", "")
+        all_img_ids = []
+        if thumb_id_str:
+            try:
+                all_img_ids.append(int(thumb_id_str))
+            except (ValueError, TypeError):
+                pass
+        if gallery_str:
+            all_img_ids.extend([int(x) for x in gallery_str.split(",") if x.strip()])
 
+        if all_img_ids:
+            # ── Query 6: Batch-fetch all image attachments + alt text ──
+            img_stmt = select(WPPost).where(WPPost.ID.in_(all_img_ids))
+            img_result = await self.session.exec(img_stmt)
+            img_posts = {p.ID: p for p in img_result.all()}
+
+            img_alt_stmt = select(WPPostMeta).where(
+                WPPostMeta.post_id.in_(all_img_ids),
+                WPPostMeta.meta_key == "_wp_attachment_alt_text"
+            )
+            img_alt_result = await self.session.exec(img_alt_stmt)
+            img_alts = {m.post_id: m.meta_value for m in img_alt_result.all()}
+
+            if thumb_id_str:
+                tid = int(thumb_id_str)
+                if tid in img_posts:
+                    att = img_posts[tid]
+                    featured_image = {
+                        "id": att.ID, "url": att.guid, "title": att.post_title,
+                        "alt_text": img_alts.get(tid, ""), "caption": att.post_excerpt
+                    }
+
+            if gallery_str:
+                for gid in [int(x) for x in gallery_str.split(",") if x.strip()]:
+                    if gid in img_posts:
+                        att = img_posts[gid]
+                        gallery_images.append({
+                            "id": att.ID, "url": att.guid, "title": att.post_title,
+                            "alt_text": img_alts.get(gid, ""), "caption": att.post_excerpt
+                        })
+
+        # ── Assemble the final response ──
+        from app.schema.wordpress.post import WPImageRead
         return WCProductFullRead(
-            **product.model_dump(),
+            id=post.ID,
+            name=post.post_title,
+            slug=post.post_name,
+            type=product_type,
+            description=post.post_content,
+            short_description=post.post_excerpt,
+            status=post.post_status,
+            sku=post_meta.get("_sku", meta.sku if meta else ""),
+            price=Decimal(post_meta.get("_sale_price") or post_meta.get("_price") or post_meta.get("_signal_price") or post_meta.get("_tool_price") or post_meta.get("_book_price") or "0"),
+            regular_price=Decimal(post_meta.get("_regular_price") or post_meta.get("_price") or "0"),
+            sale_price=Decimal(post_meta.get("_sale_price") or "0") if post_meta.get("_sale_price") else None,
+            manage_stock=post_meta.get("_manage_stock") == "yes",
+            stock_quantity=int(meta.stock_quantity) if meta and meta.stock_quantity is not None else None,
+            stock_status=meta.stock_status if meta else "instock",
+            weight=post_meta.get("_weight"),
+            dimensions=WCProductDimensions(
+                length=post_meta.get("_length"),
+                width=post_meta.get("_width"),
+                height=post_meta.get("_height")
+            ),
+            virtual=meta.virtual if meta else True,
+            downloadable=meta.downloadable if meta else True,
+            date_created=post.post_date,
+            date_modified=post.post_modified,
+            average_rating=meta.average_rating if meta else None,
+            rating_count=meta.rating_count if meta else 0,
+            total_sales=meta.total_sales if meta else 0,
+            categories=categories,
+            tags=tags,
+            seller_payment_link=post_meta.get("_seller_payment_link") or post_meta.get("selar_url") or post_meta.get("_selar_url"),
+            whop_payment_link=post_meta.get("_whop_payment_link") or post_meta.get("whop_url") or post_meta.get("_whop_url"),
+            signal_link=post_meta.get("_signal_link") or None,
+            telegram_link=post_meta.get("_telegram_link") or None,
+            vip_group=post_meta.get("_vip_group") or None,
+            featured_image=WPImageRead(**featured_image) if featured_image else None,
+            gallery_images=gallery_images,
             attributes=attributes,
             variations=variations,
             addons=addons,
-            cross_sell_ids=parse_ids(meta.get("_crosssell_ids")),
-            upsell_ids=parse_ids(meta.get("_upsell_ids"))
+            cross_sell_ids=parse_ids(post_meta.get("_crosssell_ids")),
+            upsell_ids=parse_ids(post_meta.get("_upsell_ids"))
         )
 
     async def get_products(
@@ -485,7 +851,7 @@ class WCProductRepository:
         on_sale: bool = False,
         featured: bool = False
     ) -> List[WCProductRead]:
-        """Get list of products with filtering support"""
+        """Get list of products — OPTIMIZED: ~5 queries total instead of 7N+1"""
         statement = select(WPPost).where(
             WPPost.post_type == "product"
         )
@@ -536,13 +902,161 @@ class WCProductRepository:
 
         statement = statement.order_by(WPPost.post_date.desc()).limit(limit).offset(offset)
         result = await self.session.exec(statement)
-        posts = result.unique().all() # unique because joins can cause duplicates
+        posts = result.unique().all()
 
+        if not posts:
+            return []
+
+        product_ids = [p.ID for p in posts]
+
+        # ── Batch Query 2: ALL postmeta for all products ──
+        meta_keys = [
+            "_price", "_regular_price", "_sale_price", "_sku",
+            "_weight", "_length", "_width", "_height", "_manage_stock",
+            "_seller_payment_link", "_whop_payment_link",
+            "_selar_url", "selar_url", "_whop_url", "whop_url",
+            "_thumbnail_id"
+        ]
+        meta_stmt = select(WPPostMeta).where(
+            WPPostMeta.post_id.in_(product_ids),
+            WPPostMeta.meta_key.in_(meta_keys)
+        )
+        meta_result = await self.session.exec(meta_stmt)
+        all_meta = meta_result.all()
+
+        # Group by product_id
+        meta_map = {}
+        for m in all_meta:
+            if m.post_id not in meta_map:
+                meta_map[m.post_id] = {}
+            if m.meta_key not in meta_map[m.post_id]:
+                meta_map[m.post_id][m.meta_key] = m.meta_value
+
+        # ── Batch Query 3: ALL taxonomy terms for all products ──
+        terms_stmt = (
+            select(WPTermRelationship.object_id, WPTerm, WPTermTaxonomy)
+            .join(WPTermTaxonomy, WPTerm.term_id == WPTermTaxonomy.term_id)
+            .join(WPTermRelationship, WPTermTaxonomy.term_taxonomy_id == WPTermRelationship.term_taxonomy_id)
+            .where(
+                WPTermRelationship.object_id.in_(product_ids),
+                WPTermTaxonomy.taxonomy.in_(["product_type", "product_cat", "product_tag"])
+            )
+        )
+        terms_result = await self.session.exec(terms_stmt)
+        all_terms = terms_result.all()
+
+        # Group by product_id
+        terms_map = {}
+        for obj_id, term, tax in all_terms:
+            if obj_id not in terms_map:
+                terms_map[obj_id] = {"type": "simple", "categories": [], "tags": []}
+            if tax.taxonomy == "product_type":
+                terms_map[obj_id]["type"] = term.slug
+            elif tax.taxonomy == "product_cat":
+                terms_map[obj_id]["categories"].append(WCProductCategoryRead(
+                    id=term.term_id, name=term.name, slug=term.slug,
+                    description=tax.description, parent=tax.parent, count=tax.count
+                ))
+            elif tax.taxonomy == "product_tag":
+                terms_map[obj_id]["tags"].append(WCProductTagRead(
+                    id=term.term_id, name=term.name, slug=term.slug,
+                    description=tax.description, count=tax.count
+                ))
+
+        # ── Batch Query 4: meta_lookup for all products ──
+        lookup_stmt = select(WCProductMetaLookup).where(
+            WCProductMetaLookup.product_id.in_(product_ids)
+        )
+        lookup_result = await self.session.exec(lookup_stmt)
+        lookup_map = {lk.product_id: lk for lk in lookup_result.all()}
+
+        # ── Batch Query 5: Featured images for all products ──
+        thumb_ids = []
+        thumb_product_map = {}
+        for pid in product_ids:
+            pm = meta_map.get(pid, {})
+            tid = pm.get("_thumbnail_id")
+            if tid:
+                try:
+                    tid_int = int(tid)
+                    thumb_ids.append(tid_int)
+                    thumb_product_map[tid_int] = pid
+                except (ValueError, TypeError):
+                    pass
+
+        img_map = {}
+        if thumb_ids:
+            img_stmt = select(WPPost).where(WPPost.ID.in_(thumb_ids))
+            img_result = await self.session.exec(img_stmt)
+            img_posts = {p.ID: p for p in img_result.all()}
+
+            img_alt_stmt = select(WPPostMeta).where(
+                WPPostMeta.post_id.in_(thumb_ids),
+                WPPostMeta.meta_key == "_wp_attachment_alt_text"
+            )
+            img_alt_result = await self.session.exec(img_alt_stmt)
+            img_alts = {m.post_id: m.meta_value for m in img_alt_result.all()}
+
+            for tid_int, att in img_posts.items():
+                img_map[tid_int] = {
+                    "id": att.ID, "url": att.guid, "title": att.post_title,
+                    "alt_text": img_alts.get(tid_int, ""), "caption": att.post_excerpt
+                }
+
+        # ── Assemble all products ──
+        from app.schema.wordpress.post import WPImageRead
         products = []
         for post in posts:
-            product = await self.get_product(post.ID)
-            if product:
-                products.append(product)
+            pm = meta_map.get(post.ID, {})
+            terms = terms_map.get(post.ID, {"type": "simple", "categories": [], "tags": []})
+            meta = lookup_map.get(post.ID)
+
+            # Check for featured image
+            featured_image = None
+            tid_str = pm.get("_thumbnail_id")
+            if tid_str:
+                try:
+                    img_data = img_map.get(int(tid_str))
+                    if img_data:
+                        featured_image = WPImageRead(**img_data)
+                except (ValueError, TypeError):
+                    pass
+
+            products.append(WCProductRead(
+                id=post.ID,
+                name=post.post_title,
+                slug=post.post_name,
+                type=terms["type"],
+                description=post.post_content,
+                short_description=post.post_excerpt,
+                status=post.post_status,
+                sku=pm.get("_sku", meta.sku if meta else ""),
+                price=Decimal(pm.get("_price", "0")) if pm.get("_price") else None,
+                regular_price=Decimal(pm.get("_regular_price", "0")) if pm.get("_regular_price") else None,
+                sale_price=Decimal(pm.get("_sale_price", "0")) if pm.get("_sale_price") else None,
+                manage_stock=pm.get("_manage_stock") == "yes",
+                stock_quantity=int(meta.stock_quantity) if meta and meta.stock_quantity is not None else None,
+                stock_status=meta.stock_status if meta else "instock",
+                weight=pm.get("_weight"),
+                dimensions=WCProductDimensions(
+                    length=pm.get("_length"),
+                    width=pm.get("_width"),
+                    height=pm.get("_height")
+                ),
+                virtual=meta.virtual if meta else False,
+                downloadable=meta.downloadable if meta else False,
+                date_created=post.post_date,
+                date_modified=post.post_modified,
+                average_rating=meta.average_rating if meta else None,
+                rating_count=meta.rating_count if meta else 0,
+                total_sales=meta.total_sales if meta else 0,
+                categories=terms["categories"],
+                tags=terms["tags"],
+                seller_payment_link=pm.get("_seller_payment_link") or pm.get("selar_url") or pm.get("_selar_url"),
+                whop_payment_link=pm.get("_whop_payment_link") or pm.get("whop_url") or pm.get("_whop_url"),
+                featured_image=featured_image,
+                gallery_images=[]
+            ))
         return products
 
     async def create_product(self, data: WCProductCreate) -> WCProductRead:
@@ -591,6 +1105,9 @@ class WCProductRepository:
             "_weight": data.weight or "",
             "_seller_payment_link": data.seller_payment_link or "",
             "_whop_payment_link": data.whop_payment_link or "",
+            "_signal_link": data.signal_link or "",
+            "_telegram_link": data.telegram_link or "",
+            "_vip_group": data.vip_group or "",
         }
 
         if data.dimensions:
@@ -761,6 +1278,9 @@ class WCProductRepository:
         if data.downloadable is not None: meta_updates["_downloadable"] = "yes" if data.downloadable else "no"
         if data.seller_payment_link is not None: meta_updates["_seller_payment_link"] = data.seller_payment_link
         if data.whop_payment_link is not None: meta_updates["_whop_payment_link"] = data.whop_payment_link
+        if data.signal_link is not None: meta_updates["_signal_link"] = data.signal_link
+        if data.telegram_link is not None: meta_updates["_telegram_link"] = data.telegram_link
+        if data.vip_group is not None: meta_updates["_vip_group"] = data.vip_group
 
         if data.dimensions:
             if data.dimensions.length is not None: meta_updates["_length"] = data.dimensions.length
@@ -1216,48 +1736,100 @@ class WCProductRepository:
     # ============== Product Addons (Custom Input Fields) ==============
 
     async def get_product_addons(self, product_id: int) -> List[WCProductAddonField]:
-        """Get custom input fields (addons) for a product, e.g. Telegram Username."""
+        """Get custom input fields (addons) for a product, e.g. Telegram Username.
+        Supports both official WooCommerce Product Add-Ons (_product_addons)
+        and WCPA plugin (_wcpa_product_meta -> form post IDs -> _wcpa_fb-editor-data)."""
         import phpserialize
         import json
 
+        # Fetch both meta keys
+        addon_meta_keys = ["_product_addons", "_wcpa_product_meta"]
         stmt = select(WPPostMeta).where(
             WPPostMeta.post_id == product_id,
-            WPPostMeta.meta_key == "_product_addons"
+            WPPostMeta.meta_key.in_(addon_meta_keys)
         )
         result = await self.session.exec(stmt)
-        meta = result.first()
-        if not meta or not meta.meta_value:
-            return []
+        metas = {m.meta_key: m.meta_value for m in result.all()}
 
-        try:
-            # Try JSON first (our custom format)
-            data = json.loads(meta.meta_value)
-        except (json.JSONDecodeError, ValueError):
+        all_addons = []
+
+        # 1) Official WooCommerce Product Add-Ons: fields stored inline
+        official_raw = metas.get("_product_addons")
+        if official_raw:
             try:
-                # Fall back to PHP serialized (WordPress plugin format)
-                data = phpserialize.loads(meta.meta_value.encode(), decode_strings=True)
-                if isinstance(data, dict):
-                    data = list(data.values())
+                data = json.loads(official_raw)
+            except (json.JSONDecodeError, ValueError):
+                try:
+                    data = phpserialize.loads(official_raw.encode(), decode_strings=True)
+                    if isinstance(data, dict):
+                        data = list(data.values())
+                except Exception:
+                    data = None
+            if isinstance(data, list):
+                for i, ad in enumerate(data):
+                    if isinstance(ad, dict):
+                        options = ad.get("options", [])
+                        if isinstance(options, list) and options and isinstance(options[0], dict):
+                            options = [o.get("label", o.get("value", "")) for o in options]
+                        all_addons.append(WCProductAddonField(
+                            name=ad.get("name") or ad.get("label") or ad.get("field_name") or f"Field {i}",
+                            type=ad.get("type") or ad.get("field_type") or "text",
+                            required=bool(ad.get("required", False)),
+                            placeholder=ad.get("placeholder"),
+                            description=ad.get("description"),
+                            options=options if isinstance(options, list) else [],
+                            position=int(ad.get("position", i)),
+                            max_length=int(ad.get("max_length")) if ad.get("max_length") else None
+                        ))
+
+        # 2) WCPA (Acowebs) plugin: _wcpa_product_meta contains form post IDs
+        wcpa_raw = metas.get("_wcpa_product_meta")
+        if wcpa_raw:
+            form_ids = []
+            try:
+                wcpa_data = phpserialize.loads(wcpa_raw.encode(), decode_strings=True)
+                if isinstance(wcpa_data, dict):
+                    form_ids = [int(v) for v in wcpa_data.values()]
+                elif isinstance(wcpa_data, list):
+                    form_ids = [int(v) for v in wcpa_data]
             except Exception:
-                return []
+                pass
 
-        if not isinstance(data, list):
-            return []
+            if form_ids:
+                form_meta_stmt = select(WPPostMeta).where(
+                    WPPostMeta.post_id.in_(form_ids),
+                    WPPostMeta.meta_key == "_wcpa_fb-editor-data"
+                )
+                form_meta_result = await self.session.exec(form_meta_stmt)
+                for fm in form_meta_result.all():
+                    if not fm.meta_value:
+                        continue
+                    try:
+                        fields = json.loads(fm.meta_value)
+                    except (json.JSONDecodeError, ValueError):
+                        continue
+                    if not isinstance(fields, list):
+                        continue
+                    for i, field in enumerate(fields):
+                        if not isinstance(field, dict):
+                            continue
+                        options = field.get("options", [])
+                        if not options:
+                            values = field.get("values", [])
+                            if values and isinstance(values, list):
+                                options = [v.get("label", v.get("value", "")) for v in values if isinstance(v, dict)]
+                        all_addons.append(WCProductAddonField(
+                            name=field.get("label") or field.get("name") or f"Field {i}",
+                            type=field.get("type") or "text",
+                            required=bool(field.get("required", False)),
+                            placeholder=field.get("placeholder"),
+                            description=field.get("description"),
+                            options=options if isinstance(options, list) else [],
+                            position=int(field.get("position", i)),
+                            max_length=int(field.get("maxlength")) if field.get("maxlength") else None
+                        ))
 
-        addons = []
-        for i, addon_data in enumerate(data):
-            if isinstance(addon_data, dict):
-                addons.append(WCProductAddonField(
-                    name=addon_data.get("name", addon_data.get("field_name", f"Field {i}")),
-                    type=addon_data.get("type", addon_data.get("field_type", "text")),
-                    required=bool(addon_data.get("required", False)),
-                    placeholder=addon_data.get("placeholder"),
-                    description=addon_data.get("description"),
-                    options=addon_data.get("options", []),
-                    position=int(addon_data.get("position", i)),
-                    max_length=int(addon_data.get("max_length")) if addon_data.get("max_length") else None
-                ))
-        return addons
+        return all_addons
 
     async def set_product_addons(self, product_id: int, addons: List[WCProductAddonField]) -> bool:
         """Set custom input fields for a product. Stores as JSON in _product_addons meta."""
@@ -1432,13 +2004,19 @@ class WCCartRepository:
                 if variation_id:
                     variation_meta_stmt = select(WPPostMeta).where(
                         WPPostMeta.post_id == variation_id,
-                        WPPostMeta.meta_key == "_price"
+                        WPPostMeta.meta_key.in_(["_price", "_sale_price"])
                     )
                     var_result = await self.session.exec(variation_meta_stmt)
-                    var_price_meta = var_result.first()
-                    if var_price_meta and var_price_meta.meta_value:
+                    var_metas = {m.meta_key: m.meta_value for m in var_result.all()}
+
+                    sale_price = var_metas.get("_sale_price")
+                    active_price = var_metas.get("_price")
+
+                    if sale_price and float(sale_price) > 0:
+                        price = float(sale_price)
+                    elif active_price:
                         try:
-                            price = float(var_price_meta.meta_value)
+                            price = float(active_price)
                         except (ValueError, TypeError):
                             pass
 
@@ -1466,7 +2044,8 @@ class WCCartRepository:
                     "line_total": line_total,
                     "product_image": None,
                     "seller_payment_link": product.seller_payment_link,
-                    "whop_payment_link": product.whop_payment_link
+                    "whop_payment_link": product.whop_payment_link,
+                    "custom_fields": item.get("custom_fields")
                 })
 
         return {
@@ -1514,7 +2093,8 @@ class WCCartRepository:
         user_id: int,
         product_id: int,
         quantity: int = 1,
-        variation_id: Optional[int] = None
+        variation_id: Optional[int] = None,
+        custom_fields: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """Add product to cart"""
         import json
@@ -1536,8 +2116,14 @@ class WCCartRepository:
 
         # Check if product already in cart
         found = False
+        target_prod_id = str(product_id)
+        target_var_id = str(variation_id or 0)
+
         for item in cart_data["items"]:
-            if item.get("product_id") == product_id and item.get("variation_id") == variation_id:
+            item_prod_id = str(item.get("product_id"))
+            item_var_id = str(item.get("variation_id") or 0)
+
+            if item_prod_id == target_prod_id and item_var_id == target_var_id:
                 item["quantity"] = item.get("quantity", 0) + quantity
                 found = True
                 break
@@ -1546,7 +2132,8 @@ class WCCartRepository:
             cart_data["items"].append({
                 "product_id": product_id,
                 "variation_id": variation_id,
-                "quantity": quantity
+                "quantity": quantity,
+                "custom_fields": custom_fields
             })
 
         await self._save_cart_data(session, cart_data)
@@ -1573,15 +2160,23 @@ class WCCartRepository:
             cart_data["items"] = []
 
         # Find and update or remove item
-        cart_data["items"] = [
-            item if not (item.get("product_id") == product_id and item.get("variation_id") == variation_id)
-            else {**item, "quantity": quantity}
-            for item in cart_data["items"]
-            if not (item.get("product_id") == product_id and item.get("variation_id") == variation_id and quantity == 0)
-        ]
+        target_prod_id = str(product_id)
+        target_var_id = str(variation_id or 0)
 
-        # Remove items with 0 quantity
-        cart_data["items"] = [item for item in cart_data["items"] if item.get("quantity", 0) > 0]
+        new_items = []
+        for item in cart_data["items"]:
+            item_prod_id = str(item.get("product_id"))
+            item_var_id = str(item.get("variation_id") or 0)
+
+            if item_prod_id == target_prod_id and item_var_id == target_var_id:
+                if quantity > 0:
+                    new_item = {**item, "quantity": quantity}
+                    new_items.append(new_item)
+                # if quantity is 0, we just don't append it (remove)
+            else:
+                new_items.append(item)
+
+        cart_data["items"] = new_items
 
         await self._save_cart_data(session, cart_data)
         return await self.get_cart(user_id)
@@ -1660,9 +2255,13 @@ class WCCartRepository:
         if not cart["items"]:
             raise ValueError("Cart is empty")
 
+        # Determine initial status: free orders are completed immediately
+        is_free = float(cart["total"]) == 0 or payment_method == "free"
+        initial_status = "completed" if is_free else "pending"
+
         # Create order
         order = WCOrder(
-            status="pending",
+            status=initial_status,
             currency="USD",
             type="shop_order",
             total_amount=cart["total"],

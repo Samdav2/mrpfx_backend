@@ -12,7 +12,13 @@
 
     <p>We are excited effectively to aid you on your trading journey.</p>
 
-    <a href="{{ course_url }}" class="button">Start Learning Now</a>
+    {% if message %}
+    <div style="margin: 25px 0; text-align: left;">
+        {{ message | safe }}
+    </div>
+    {% endif %}
+
+    <a href="{{ course_url }}" class="button">Start Learning</a>
 
     <p style="margin-top: 20px;">If you have any questions, feel free to reply to this email.</p>
 </div>

@@ -55,8 +55,22 @@ async def get_wp_session() -> AsyncSession:
 
 async def ini_db():
     """
-    Initialize the WordPress MySQL database.
-    Uses checkfirst=True (default) so existing tables are skipped.
+    Initialize all database tables.
     """
+    # Import models here to avoid circular imports and ensure registration
+    import app.model.wordpress
+    import app.model.crypto_payment
+    import app.model.services
+    import app.model.traders
+    import app.model.user
+
+    # 1. Main database
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
+    except Exception:
+        pass # Handle errors gracefully if one DB fails
+
+    # 2. WordPress database
     async with wp_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)

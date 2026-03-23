@@ -9,8 +9,9 @@ from pydantic import BaseModel
 
 from app.db.session import get_session
 from app.repo.wordpress.security import SecurityRepository
+from app.dependencies.auth import get_current_admin
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_admin)])
 
 
 # =============================================================================

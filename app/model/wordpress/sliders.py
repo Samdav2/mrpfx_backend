@@ -50,8 +50,8 @@ class SmartSliderXref(SQLModel, table=True):
     """Smart Slider cross-references (8jH_nextend2_smartslider3_sliders_xref)"""
     __tablename__ = "8jH_nextend2_smartslider3_sliders_xref"
 
-    group_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
-    slider_id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True}, foreign_key="8jH_nextend2_smartslider3_sliders.id")
+    group_id: int = Field(primary_key=True)
+    slider_id: int = Field(primary_key=True, foreign_key="8jH_nextend2_smartslider3_sliders.id")
     ordering: int = Field(default=0)
 
 

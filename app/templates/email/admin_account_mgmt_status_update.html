@@ -1,0 +1,19 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h2>Account Management Connection Updated</h2>
+
+    <div class="box" style="text-align: left;">
+        <p><strong>User:</strong> {{ username }} ({{ user_email }})</p>
+        <p><strong>Account ID:</strong> {{ account_id }}</p>
+        <p><strong>Capital:</strong> ${{ capital }}</p>
+        <p><strong>New Status:</strong> <span style="color: #3b82f6; font-weight: bold;">{{ status }}</span></p>
+        <p><strong>Update Date:</strong> {{ update_date }}</p>
+    </div>
+
+    <p style="margin-top: 20px;">Review this connection and other requests in the admin dashboard:</p>
+
+    <a href="{{ admin_dashboard_url }}" class="button">Go to Admin Dashboard</a>
+</div>
+{% endblock %}

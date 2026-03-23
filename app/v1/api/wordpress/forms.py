@@ -9,8 +9,9 @@ from pydantic import BaseModel
 
 from app.db.session import get_session
 from app.repo.wordpress.forms import FormsRepository
+from app.dependencies.auth import get_current_user
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 # =============================================================================

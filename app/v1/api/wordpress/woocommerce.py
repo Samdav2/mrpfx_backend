@@ -19,7 +19,7 @@ from app.schema.wordpress.woocommerce import (
     WCProductAddonField, WCProductAddonsCreate, WCProductAddonsRead
 )
 from app.service.email import send_order_confirmation_email, send_order_status_update_email
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import get_current_user, get_current_admin
 from app.model.user import User
 
 router = APIRouter()
@@ -31,6 +31,7 @@ router = APIRouter()
 async def get_orders(
     skip: int = 0,
     limit: int = 10,
+    current_admin: User = Depends(get_current_admin),
     session: Session = Depends(get_session)
 ):
     """Get list of WooCommerce orders"""
@@ -41,6 +42,7 @@ async def get_orders(
 @router.get("/orders/{order_id}", response_model=WCOrderFull)
 async def get_order(
     order_id: int,
+    current_admin: User = Depends(get_current_admin),
     session: Session = Depends(get_session)
 ):
     """Get a WooCommerce order by ID (with full details)"""
@@ -105,6 +107,7 @@ async def update_order(
 async def get_customers(
     skip: int = 0,
     limit: int = 10,
+    current_admin: User = Depends(get_current_admin),
     session: Session = Depends(get_session)
 ):
     """Get list of WooCommerce customers"""
@@ -115,6 +118,7 @@ async def get_customers(
 @router.get("/customers/{customer_id}", response_model=WCCustomerLookup)
 async def get_customer(
     customer_id: int,
+    current_admin: User = Depends(get_current_admin),
     session: Session = Depends(get_session)
 ):
     """Get a WooCommerce customer by ID"""
@@ -507,7 +511,8 @@ async def add_to_cart(
             user_id=current_user.ID,
             product_id=request.product_id,
             quantity=request.quantity,
-            variation_id=request.variation_id
+            variation_id=request.variation_id,
+            custom_fields=request.custom_fields
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -529,7 +534,7 @@ async def update_cart_item(
     )
 
 
-@router.delete("/cart/{product_id}", response_model=dict, tags=["WooCommerce Cart"])
+@router.delete("/cart/remove/{product_id}", response_model=dict, tags=["WooCommerce Cart"])
 async def remove_from_cart(
     product_id: int,
     variation_id: int = None,
@@ -545,7 +550,7 @@ async def remove_from_cart(
     )
 
 
-@router.delete("/cart", response_model=dict, tags=["WooCommerce Cart"])
+@router.delete("/cart/clear", response_model=dict, tags=["WooCommerce Cart"])
 async def clear_cart(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -555,7 +560,7 @@ async def clear_cart(
     return await repo.clear_cart(current_user.ID)
 
 
-@router.post("/cart/apply-coupon", response_model=dict, tags=["WooCommerce Cart"])
+@router.post("/cart/coupon", response_model=dict, tags=["WooCommerce Cart"])
 async def apply_coupon(
     request: WCApplyCouponRequest,
     current_user: User = Depends(get_current_user),
@@ -630,6 +635,16 @@ async def get_my_order_summary(
     """Get order summary for the current user"""
     repo = WCCartRepository(session)
     return await repo.get_user_order_summary(current_user.ID)
+
+
+@router.get("/my-orders/digital-assets", response_model=List[WCProductRead], tags=["WooCommerce User"])
+async def get_my_digital_assets(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Get all products with access links from the current user's completed orders"""
+    order_repo = WCOrderRepository(session)
+    return await order_repo.get_user_digital_assets(current_user.ID)
 
 
 @router.get("/my-orders/{order_id}", response_model=WCOrderFull, tags=["WooCommerce User"])
